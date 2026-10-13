@@ -402,16 +402,13 @@ def serialize_worker(worker: dict[str, Any]) -> dict[str, Any]:
         "last_test": worker.get("last_test"),
     }
 
-
-# ---------------------------------------------------------------------------
-# Health
-# ---------------------------------------------------------------------------
-
-@app.get("/health")
-def health() -> dict[str, str]:
+@app.api_route("/health", methods=["GET", "HEAD"])
+def health():
     mongo_client.admin.command("ping")
-    return {"status": "ok", "service": "Healthy API"}
-
+    return {
+        "status": "ok",
+        "service": "goodAPI"
+    }
 
 # ---------------------------------------------------------------------------
 # Authentication
