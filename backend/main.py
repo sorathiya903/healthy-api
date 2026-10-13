@@ -328,7 +328,11 @@ def login(payload: LoginRequest, response: Response) -> dict[str, Any]:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     set_session_cookie(response, user["_id"])
+    print("LOGIN DEBUG: session cookie set")
+    print("LOGIN DEBUG: response headers:", response.headers)
+
     return {"user": public_user(user)}
+    
 
 
 @app.post("/auth/logout")
