@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>goodAPI — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+// Apply theme BEFORE paint to avoid flash
+const saved = localStorage.getItem("goodapi-theme");
+const initial = saved === "dark"? "dark" : "light";
+document.documentElement.dataset.theme = initial;
+</script>
+<style>
+:root{
+  --bg:#F7F8FA; --surface:#FFFFFF; --secondary:#F1F3F5; --elevated:#FFFFFF;
+  --text:#17181C; --muted:#717680; --border:#E4E7EC;
+  --accent:#65A30D; --accent-hover:#4D7C0F; --accent-soft:rgba(101,163,13,0.1);
+  --error:#DC2626; --error-soft:rgba(220,38,38,0.08);
+  --warning:#D97706; --warning-soft:rgba(217,119,6,0.1);
+  --radius:12px; --radius-sm:8px; --radius-full:999px;
+  --font-sans:"Geist", Inter, -apple-system, sans-serif;
+  --font-mono:"Geist Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --shadow:0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08);
+  --shadow-lg:0 4px 12px rgba(16,24,40,0.08), 0 2px 6px rgba(16,24,40,0.06);
+}
+[data-theme="dark"]{
+  --bg:#0A0A0C; --surface:#111114; --secondary:#161619; --elevated:#1A1A1E;
+  --text:#F5F5F5; --muted:#92929D; --border:#27272A;
+  --accent:#D4FF00; --accent-hover:#E0FF4D; --accent-soft:rgba(212,255,0,0.12);
+  --error:#FF3B30; --error-soft:rgba(255,59,48,0.12);
+  --warning:#F59E0B; --warning-soft:rgba(245,158,11,0.12);
+  --shadow:none; --shadow-lg:0 4px 24px rgba(0,0,0,0.4);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+a{color:inherit; text-decoration:none}
+
+/* Layout */
+.layout{display:flex; min-height:100vh}
+.sidebar{
+  width:264px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; position:sticky; top:0; height:100vh; z-index:20;
+}
+.sidebar-top{padding:20px 16px 12px; border-bottom:1px solid var(--border)}
+.logo-row{display:flex; align-items:center; gap:10px}
+.logo-icon{width:32px; height:32px; border-radius:9px; background:var(--text); color:var(--bg); display:grid; place-items:center}
+[data-theme="dark"].logo-icon{background:var(--text); color:var(--bg)}
+.logo-text{font-weight:700; letter-spacing:-0.03em; font-size:15px}
+.logo-sub{font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; color:var(--muted); text-transform:uppercase; margin-top:2px}
+.nav{padding:12px 10px; display:grid; gap:2px; flex:1; overflow:auto}
+.nav-item{
+  height:36px; display:flex; align-items:center; gap:10px; padding:0 10px; border-radius:var(--radius-sm);
+  color:var(--muted); font-size:13.5px; font-weight:500; cursor:pointer; border:1px solid transparent; transition:all 150ms;
+}
+.nav-item:hover{background:var(--secondary); color:var(--text)}
+.nav-item.active{background:var(--secondary); color:var(--text); border-color:var(--border)}
+.nav-item[aria-disabled="true"]{opacity:0.5; cursor:not-allowed}
+.nav-item.lucide{width:18px; height:18px}
+.sidebar-bottom{padding:12px 10px; border-top:1px solid var(--border); display:grid; gap:8px}
+.theme-toggle{
+  height:36px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--secondary);
+  display:flex; align-items:center; justify-content:space-between; padding:0 10px; cursor:pointer; color:var(--text); font-size:13px; font-weight:500;
+}
+.user-card{display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:var(--radius-sm); background:var(--secondary); border:1px solid var(--border)}
+.avatar{width:28px; height:28px; border-radius:999px; background:var(--text); color:var(--bg); display:grid; place-items:center; font-weight:600; font-size:12px; flex-shrink:0}
+.user-meta{overflow:hidden}
+.user-name{font-weight:600; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.user-email{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--font-mono)}
+.logout-btn{height:32px; border-radius:var(--radius-sm); border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; font-size:12px; font-weight:500; display:flex; align-items:center; justify-content:center; gap:6px}
+.logout-btn:hover{color:var(--error); border-color:var(--error)}
+
+/* Main */
+.main{flex:1; min-width:0; display:flex; flex-direction:column}
+.topbar{
+  height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:0 28px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:10;
+}
+.breadcrumb{font-family:var(--font-mono); font-size:11px; color:var(--muted); display:flex; align-items:center; gap:6px}
+.breadcrumb b{color:var(--text); font-weight:600}
+.topbar-title h1{font-size:18px; font-weight:700; letter-spacing:-0.03em; margin:0}
+.topbar-title p{margin:2px 0 0; font-size:13px; color:var(--muted)}
+.topbar-actions{display:flex; align-items:center; gap:8px}
+.btn{
+  height:36px; padding:0 14px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface);
+  display:inline-flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; cursor:pointer; transition:all 150ms; white-space:nowrap;
+}
+.btn:disabled{opacity:0.6; cursor:not-allowed}
+.btn-primary{background:var(--text); color:var(--bg); border-color:var(--text)}
+.btn-primary:hover{opacity:0.9}
+[data-theme="dark"].btn-primary{background:var(--accent); color:#0A0A0C; border-color:var(--accent)}
+.btn-ghost{background:transparent}
+.btn-ghost:hover{background:var(--secondary)}
+.content{padding:24px 28px 40px; max-width:1280px; width:100%}
+
+/* Summary */
+.grid-4{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 22px}
+.stat-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 16px; box-shadow:var(--shadow)}
+.stat-label{font-family:var(--font-mono); font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:6px}
+.stat-value{font-size:22px; font-weight:700; letter-spacing:-0.03em; margin-top:8px}
+.stat-sub{font-size:12px; color:var(--muted); margin-top:4px; font-family:var(--font-mono)}
+.dot{width:8px; height:8px; border-radius:50%; display:inline-block}
+.dot.green{background:#22C55E}.dot.red{background:var(--error)}.dot.gray{background:#9CA3AF}
+
+/* Workers */
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px}
+.section-title{font-size:15px; font-weight:650; letter-spacing:-0.02em}
+.section-desc{font-size:13px; color:var(--muted)}
+.table-wrap{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
+.workers-table{width:100%; border-collapse:collapse}
+.workers-table th{font-family:var(--font-mono); font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--muted); font-weight:500; text-align:left; padding:10px 16px; background:var(--secondary); border-bottom:1px solid var(--border)}
+.workers-table td{padding:14px 16px; border-bottom:1px solid var(--border); font-size:13.5px; vertical-align:middle}
+.workers-table tr:last-child td{border-bottom:0}
+.url-cell{max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--font-mono); font-size:12.5px; color:var(--muted)}
+.status-badge{display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 9px; border-radius:999px; font-size:11px; font-weight:650; letter-spacing:0.02em; border:1px solid var(--border)}
+.status-badge.op{background:rgba(34,197,94,0.12); color:#15803D; border-color:rgba(34,197,94,0.25)}
+.status-badge.fail{background:var(--error-soft); color:var(--error); border-color:rgba(220,38,38,0.2)}
+.status-badge.unknown{background:var(--secondary); color:var(--muted)}
+.mono{font-family:var(--font-mono); font-size:12px}
+
+/* Cards on mobile */
+.workers-cards{display:none; gap:10px}
+.worker-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:grid; gap:10px}
+.worker-card-top{display:flex; justify-content:space-between; gap:10px}
+.worker-name{font-weight:600; font-size:14px}
+
+/* Empty state — exact copy required */
+.empty-state{padding:56px 24px; display:grid; place-items:center; text-align:center}
+.empty-icon{width:48px; height:48px; border-radius:14px; background:var(--secondary); border:1px solid var(--border); display:grid; place-items:center; color:var(--muted); margin-bottom:16px}
+.empty-title{font-size:16px; font-weight:700; letter-spacing:-0.02em}
+.empty-desc{font-size:13px; color:var(--muted); margin-top:6px; max-width:320px; line-height:1.5}
+
+/* Loading */
+.skeleton{height:16px; border-radius:6px; background:linear-gradient(90deg, var(--secondary) 25%, var(--border) 50%, var(--secondary) 75%); background-size:200% 100%; animation:shim 1.2s infinite}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Modal */
+.backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(6px); display:none; place-items:center; padding:20px; z-index:50}
+.backdrop.open{display:grid}
+.modal{width:100%; max-width:460px; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg); padding:18px}
+.modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px}
+.modal-title{font-weight:700; font-size:15px}
+.field{display:grid; gap:6px; margin-bottom:12px}
+.field-label{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); font-weight:500}
+.field-input{height:40px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg); color:var(--text); padding:0 12px; font-size:14px; outline:none; width:100%}
+.field-input:focus{border-color:var(--text); box-shadow:0 0 0 3px var(--secondary)}
+.field-input[aria-invalid="true"]{border-color:var(--error)}
+.field-error{font-size:12px; color:var(--error); min-height:14px}
+.modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:14px}
+
+/* Toast */
+.toast-stack{position:fixed; right:16px; bottom:16px; z-index:60; display:grid; gap:8px}
+.toast{background:var(--elevated); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:13px; box-shadow:var(--shadow-lg); min-width:280px; display:flex; gap:10px; align-items:flex-start}
+.toast.ok{border-color:rgba(34,197,94,0.3)}.toast.err{border-color:rgba(220,38,38,0.3)}
+
+/* Mobile */
+.menu-btn{display:none; width:36px; height:36px; border-radius:8px; border:1px solid var(--border); background:var(--surface); place-items:center; cursor:pointer}
+@media (max-width:1024px){
+ .grid-4{grid-template-columns:repeat(2,1fr)}
+ .sidebar{position:fixed; left:0; top:0; transform:translateX(-100%); transition:transform 200ms ease}
+ .sidebar.open{transform:translateX(0)}
+ .menu-btn{display:grid}
+ .table-wrap{display:none}
+ .workers-cards{display:grid}
+ .topbar{padding:0 16px}
+ .content{padding:18px 16px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+    <div class="sidebar-top">
+      <div class="logo-row">
+        <div class="logo-icon"><i data-lucide="activity" style="width:16px;height:16px"></i></div>
+        <div>
+          <div class="logo-text">goodAPI</div>
+          <div class="logo-sub">API MONITORING</div>
+        </div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <div class="nav-item active" data-nav="overview"><i data-lucide="layout-dashboard"></i> Overview</div>
+      <div class="nav-item" data-nav="workers"><i data-lucide="boxes"></i> Workers</div>
+      <div class="nav-item" aria-disabled="true" title="Coming soon"><i data-lucide="activity"></i> Activity</div>
+      <div class="nav-item" aria-disabled="true" title="Coming soon"><i data-lucide="settings"></i> Settings</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme"><span style="display:flex;align-items:center;gap:8px"><i data-lucide="sun" id="theme-icon" style="width:16px;height:16px"></i><span id="theme-label">Light</span></span><span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">⌘T</span></button>
+      <div class="user-card" id="user-card">
+        <div class="avatar" id="avatar">–</div>
+        <div class="user-meta"><div class="user-name" id="user-name">Loading...</div><div class="user-email" id="user-email">–</div></div>
+      </div>
+      <button id="logout-btn" class="logout-btn" type="button"><i data-lucide="log-out" style="width:14px;height:14px"></i> Logout</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="menu-btn" class="menu-btn" aria-label="Open menu"><i data-lucide="menu" style="width:18px;height:18px"></i></button>
+        <div class="topbar-title">
+          <div class="breadcrumb"><span>Dashboard</span><span>/</span><b>Overview</b></div>
+          <h1>Overview</h1>
+          <p>Monitor your APIs. Know when they fail.</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="create-btn-top" class="btn btn-primary" type="button"><i data-lucide="plus" style="width:16px;height:16px"></i> Create worker</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="connection-error" style="display:none;background:var(--error-soft);border:1px solid rgba(220,38,38,0.25);color:var(--error);padding:10px 12px;border-radius:10px;font-size:13px;display:none;align-items:center;justify-content:space-between;gap:12px">
+        <span id="connection-msg">Cannot reach API.</span>
+        <button id="retry-btn" class="btn" style="height:28px">Retry</button>
+      </div>
+
+      <div class="grid-4" id="stats-grid">
+        <div class="stat-card"><div class="stat-label"><span class="dot gray"></span> Total workers</div><div class="stat-value" id="stat-total">–</div><div class="stat-sub" id="stat-total-sub">loading</div></div>
+        <div class="stat-card"><div class="stat-label"><span class="dot green"></span> Operational</div><div class="stat-value" id="stat-op">–</div><div class="stat-sub">latest checks successful</div></div>
+        <div class="stat-card"><div class="stat-label"><span class="dot red"></span> Failing</div><div class="stat-value" id="stat-fail">–</div><div class="stat-sub">needs attention</div></div>
+        <div class="stat-card"><div class="stat-label"><span class="dot gray"></span> Latest activity</div><div class="stat-value mono" style="font-size:14px" id="stat-activity">–</div><div class="stat-sub" id="stat-activity-sub">most recent check</div></div>
+      </div>
+
+      <div class="section-head">
+        <div><div class="section-title">Your workers</div><div class="section-desc">Monitor the health of your API endpoints.</div></div>
+        <button id="refresh-btn" class="btn btn-ghost" type="button" style="height:32px"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i> Refresh</button>
+      </div>
+
+      <div class="table-wrap" id="table-wrap">
+        <table class="workers-table" aria-label="Workers">
+          <thead><tr><th>Name</th><th>URL</th><th>Status</th><th>HTTP</th><th>Response</th><th>Last checked</th><th>Actions</th></tr></thead>
+          <tbody id="workers-tbody"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none">
+          <div class="empty-icon"><i data-lucide="inbox" style="width:22px;height:22px"></i></div>
+          <div class="empty-title">You have no workers</div>
+          <div class="empty-desc">Create your first worker to start monitoring an API.</div>
+          <div style="margin-top:16px"><button id="empty-create-btn" class="btn btn-primary" type="button"><i data-lucide="plus" style="width:16px;height:16px"></i> Create your first worker</button></div>
+        </div>
+        <div id="loading-state" style="padding:12px"><div class="skeleton" style="height:18px;margin:8px 12px"></div><div class="skeleton" style="height:18px;margin:8px 12px"></div><div class="skeleton" style="height:18px;margin:8px 12px"></div></div>
+      </div>
+
+      <div class="workers-cards" id="workers-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Worker Modal -->
+<div class="backdrop" id="create-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title">
+    <div class="modal-head"><div class="modal-title" id="create-title">Create worker</div><button id="create-close" class="btn btn-ghost" style="height:28px;width:28px;padding:0" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px"></i></button></div>
+    <form id="create-form" novalidate>
+      <div class="field"><label class="field-label" for="worker-name">Worker name</label><input id="worker-name" class="field-input" type="text" placeholder="prod-api-health" autocomplete="off" required /><div class="field-error" id="worker-name-err"></div></div>
+      <div class="field"><label class="field-label" for="worker-url">API URL</label><input id="worker-url" class="field-input" type="url" inputmode="url" placeholder="https://api.example.com/health" autocomplete="url" required /><div class="field-error" id="worker-url-err"></div></div>
+      <div id="create-alert" style="display:none;font-size:12px;color:var(--error);background:var(--error-soft);border:1px solid rgba(220,38,38,0.2);padding:8px 10px;border-radius:8px"></div>
+      <div class="modal-actions"><button type="button" id="create-cancel" class="btn">Cancel</button><button type="submit" id="create-submit" class="btn btn-primary"><span id="create-submit-text">Create worker</span></button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="backdrop" id="detail-backdrop" aria-hidden="true">
+  <div class="modal" style="max-width:560px"><div class="modal-head"><div class="modal-title">Worker details</div><button id="detail-close" class="btn btn-ghost" style="height:28px;width:28px;padding:0" aria-label="Close"><i data-lucide="x" style="width:16px;height:16px"></i></button></div><div id="detail-body" style="display:grid;gap:8px;font-size:13px"></div><div id="detail-history" style="margin-top:12px;display:grid;gap:6px"></div></div>
+</div>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+<script src="config.js"></script>
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+let currentUser=null; let workers=[];
+
+function safeText(parent, text){ parent.textContent = text?? ""; }
+function formatDate(iso){
+  if(!iso) return "—";
+  try{ const d=new Date(iso); if(isNaN(d)) return String(iso); const diff=Date.now()-d.getTime(); const m=Math.floor(diff/60000); if(m<1) return "just now"; if(m<60) return `${m}m ago`; const h=Math.floor(m/60); if(h<24) return `${h}h ago`; return d.toLocaleString(); }catch{ return String(iso); }
+}
+function escapeAttr(s){ return String(s).replace(/"/g,'&quot;'); }
+
+function setTheme(theme){
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem("goodapi-theme", theme);
+  updateThemeIcon(theme);
+}
+function updateThemeIcon(theme){
+  const icon=$("#theme-icon"); const label=$("#theme-label");
+  if(label) label.textContent = theme === "dark"? "Dark" : "Light";
+  if(icon){
+    icon.setAttribute("data-lucide", theme === "dark"? "moon" : "sun");
+    lucide.createIcons();
+  }
+}
+function toggleTheme(){ const cur=document.documentElement.dataset.theme; setTheme(cur==="dark"?"light":"dark"); }
+
+async function api(path, opts={}){
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: opts.method || "GET",
+    headers: { "Content-Type":"application/json",...(opts.headers||{}) },
+    credentials: "include",
+    body: opts.body? JSON.stringify(opts.body) : undefined,
+  });
+  const text = await res.text();
+  let data=null; try{ data=text?JSON.parse(text):null }catch{ data={detail:text} }
+  if(!res.ok){
+    const detail = data?.detail || data?.message || text || `Error ${res.status}`;
+    const msg = Array.isArray(detail)? detail.map(d=>d.msg||d.message||JSON.stringify(d)).join(" • ") : typeof detail==="string"?detail:JSON.stringify(detail);
+    const err=new Error(msg); err.status=res.status; err.data=data; throw err;
+  }
+  return data;
+}
+
+function showToast(msg, type="ok"){
+  const stack=$("#toast-stack");
+  const el=document.createElement("div"); el.className=`toast ${type}`;
+  el.innerHTML=`<i data-lucide="${type==="ok"?"check-circle":"alert-circle"}" style="width:16px;height:16px;flex-shrink:0;margin-top:1px"></i><span>${escapeAttr(msg)}</span>`;
+  el.querySelector("span").textContent=msg;
+  stack.appendChild(el); lucide.createIcons({root:el});
+  setTimeout(()=>{ el.style.opacity="0"; el.style.transform="translateY(4px)"; el.style.transition="all 200ms"; setTimeout(()=>el.remove(),200); }, 3200);
+}
+
+function getStatus(worker){
+  // Backend may provide: last_status, status, last_check_status, last_check, latest_check
+  const s = (worker.last_status || worker.status || worker.last_check_status || worker.latest_status || "").toString().toLowerCase();
+  if(["up","operational","success","successful","ok","healthy"].includes(s)) return "operational";
+  if(["down","failing","failed","error","unhealthy"].includes(s)) return "failing";
+  if(worker.last_check && typeof worker.last_check === "object"){
+    const cs = (worker.last_check.status||worker.last_check.state||"").toString().toLowerCase();
+    if(["success","up","ok"].includes(cs)) return "operational";
+    if(["fail","down","error"].includes(cs)) return "failing";
+  }
+  return "unknown";
+}
+
+function renderStats(){
+  $("#stat-total").textContent = String(workers.length);
+  $("#stat-total-sub").textContent = workers.length? `${workers.length} active monitor${workers.length>1?"s":""}` : "no workers yet";
+  const ops = workers.filter(w=>getStatus(w)==="operational").length;
+  const fails = workers.filter(w=>getStatus(w)==="failing").length;
+  $("#stat-op").textContent = workers.length? String(ops) : "—";
+  $("#stat-fail").textContent = workers.length? String(fails) : "—";
+  // latest activity = most recent last_checked_at / updated_at / created_at
+  let latest=null;
+  for(const w of workers){
+    const t = w.last_checked_at || w.last_check_at || w.updated_at || w.last_check?.checked_at || w.created_at;
+    if(t){ const d=new Date(t); if(!isNaN(d) && (!latest || d>latest)) latest=d; }
+  }
+  $("#stat-activity").textContent = latest? formatDate(latest.toISOString()) : "—";
+  $("#stat-activity-sub").textContent = latest? latest.toLocaleString() : "no checks yet";
+}
+
+function renderWorkers(){
+  const tbody=$("#workers-tbody"); const cards=$("#workers-cards");
+  const empty=$("#empty-state"); const loading=$("#loading-state");
+  loading.style.display="none";
+  tbody.innerHTML=""; cards.innerHTML="";
+  if(!workers.length){
+    empty.style.display="grid";
+    $("#table-wrap").querySelector("table").style.display="none";
+    cards.innerHTML = `<div class="empty-state" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)"><div class="empty-icon"><i data-lucide="inbox" style="width:22px;height:22px"></i></div><div class="empty-title">You have no workers</div><div class="empty-desc">Create your first worker to start monitoring an API.</div><div style="margin-top:16px"><button id="empty-create-btn2" class="btn btn-primary" type="button"><i data-lucide="plus" style="width:16px;height:16px"></i> Create your first worker</button></div></div>`;
+    lucide.createIcons();
+    $("#empty-create-btn2")?.addEventListener("click", openCreateModal);
+    return;
+  }
+  empty.style.display="none";
+  $("#table-wrap").querySelector("table").style.display="table";
+
+  for(const w of workers){
+    const id = w.id || w._id || w.worker_id;
+    const name = w.name || w.worker_name || "Unnamed worker";
+    const url = w.url || w.endpoint || w.api_url || w.target_url || "";
+    const status = getStatus(w);
+    const httpCode = w.last_status_code || w.last_http_code || w.last_check?.status_code || w.last_check?.http_code || "—";
+    const respTime = w.last_response_time_ms || w.last_response_time || w.response_time_ms || w.last_check?.response_time_ms || w.last_check?.latency_ms;
+    const lastChecked = w.last_checked_at || w.last_check_at || w.updated_at || w.last_check?.checked_at || w.created_at;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td style="font-weight:600">${escapeAttr(name)}</td>
+      <td><div class="url-cell" title="${escapeAttr(url)}">${escapeAttr(url)}</div></td>
+      <td><span class="status-badge ${status==="operational"?"op":status==="failing"?"fail":"unknown"}"><span class="dot ${status==="operational"?"green":status==="failing"?"red":"gray"}"></span>${status==="operational"?"Operational":status==="failing"?"Failing":"Unknown"}</span></td>
+      <td class="mono">${escapeAttr(String(httpCode))}</td>
+      <td class="mono">${respTime!=null && respTime!==""? `${escapeAttr(String(respTime))}ms` : "—"}</td>
+      <td class="mono">${escapeAttr(formatDate(lastChecked))}</td>
+      <td><div style="display:flex;gap:6px"><button class="btn" style="height:28px;padding:0 10px" data-view="${escapeAttr(String(id))}">View</button><button class="btn btn-ghost" style="height:28px;padding:0 10px;color:var(--error)" data-del="${escapeAttr(String(id))}">Delete</button></div></td>
+    `;
+    tr.querySelector("[data-view]")?.addEventListener("click",()=>openDetail(id));
+    tr.querySelector("[data-del]")?.addEventListener("click",()=>confirmDelete(id, name));
+    // safe overwrite of name cell textContent to avoid XSS
+    tr.children[0].textContent = name;
+    tbody.appendChild(tr);
+
+    const card=document.createElement("div"); card.className="worker-card";
+    card.innerHTML=`
+      <div class="worker-card-top"><div class="worker-name"></div><span class="status-badge ${status==="operational"?"op":status==="failing"?"fail":"unknown"}">${status}</span></div>
+      <div class="url-cell" style="max-width:100%"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="mono">${escapeAttr(String(httpCode))}</span><span class="mono">${respTime!=null?`${escapeAttr(String(respTime))}ms`:"—"}</span><span class="mono">${escapeAttr(formatDate(lastChecked))}</span></div>
+      <div style="display:flex;gap:6px"><button class="btn" style="flex:1" data-view-m="${escapeAttr(String(id))}">View</button><button class="btn btn-ghost" style="flex:1;color:var(--error)" data-del-m="${escapeAttr(String(id))}">Delete</button></div>
+    `;
+    card.querySelector(".worker-name").textContent=name;
+    card.querySelector(".url-cell").textContent=url;
+    card.querySelector("[data-view-m]")?.addEventListener("click",()=>openDetail(id));
+    card.querySelector("[data-del-m]")?.addEventListener("click",()=>confirmDelete(id,name));
+    cards.appendChild(card);
+  }
+}
+
+async function loadUser(){
+  try{
+    const me = await api("/auth/me");
+    currentUser = me.user || me;
+    const email = currentUser.email || me.email || "";
+    const name = currentUser.name || currentUser.full_name || currentUser.username || (email? email.split("@")[0] : "User");
+    $("#user-name").textContent = name;
+    $("#user-email").textContent = email;
+    $("#avatar").textContent = (name[0]||"U").toUpperCase();
+    return true;
+  }catch(err){
+    if(err.status===401){
+      window.location.href="login.html";
+      return false;
+    }
+    throw err;
+  }
+}
+
+async function loadWorkers(){
+  $("#loading-state").style.display="block";
+  $("#table-wrap").querySelector("table").style.display="table";
+  $("#empty-state").style.display="none";
+  try{
+    const data = await api("/workers");
+    workers = Array.isArray(data)? data : (data.workers || data.data || []);
+    renderStats(); renderWorkers();
+  }catch(err){
+    $("#loading-state").style.display="none";
+    throw err;
+  }
+}
+
+function openCreateModal(){
+  $("#create-backdrop").classList.add("open"); $("#create-backdrop").setAttribute("aria-hidden","false");
+  $("#worker-name").focus(); hideCreateError();
+}
+function closeCreateModal(){
+  $("#create-backdrop").classList.remove("open"); $("#create-backdrop").setAttribute("aria-hidden","true");
+  $("#create-form").reset(); hideCreateError();
+  $("#worker-name-err").textContent=""; $("#worker-url-err").textContent="";
+}
+function hideCreateError(){ const el=$("#create-alert"); el.style.display="none"; el.textContent=""; }
+function showCreateError(msg){ const el=$("#create-alert"); el.textContent=msg; el.style.display="block"; }
+
+function validateCreate(){
+  let ok=true;
+  const name=$("#worker-name").value.trim();
+  const url=$("#worker-url").value.trim();
+  $("#worker-name-err").textContent=""; $("#worker-url-err").textContent="";
+  if(!name){ $("#worker-name-err").textContent="Name is required."; ok=false; }
+  try{ const u=new URL(url); if(!["http:","https:"].includes(u.protocol)) throw 0; }catch{ $("#worker-url-err").textContent="Enter a valid http(s) URL."; ok=false; }
+  return ok;
+}
+
+async function handleCreate(e){
+  e.preventDefault();
+  if(!validateCreate()) return;
+  const btn=$("#create-submit"); const txt=$("#create-submit-text");
+  btn.disabled=true; txt.textContent="Creating...";
+  try{
+    // Try common payload shapes — backend expects name + url variations
+    const payloads = [
+      { name: $("#worker-name").value.trim(), url: $("#worker-url").value.trim() },
+      { name: $("#worker-name").value.trim(), api_url: $("#worker-url").value.trim() },
+      { name: $("#worker-name").value.trim(), endpoint: $("#worker-url").value.trim() },
+      { name: $("#worker-name").value.trim(), target_url: $("#worker-url").value.trim() },
+    ];
+    let created=null; let lastErr=null;
+    for(const p of payloads){
+      try{ created = await api("/workers", {method:"POST", body:p}); break; }catch(err){ lastErr=err; if(err.status!==422 && err.status!==400) break; }
+    }
+    if(!created) throw lastErr;
+    closeCreateModal(); showToast("Worker created","ok");
+    await loadWorkers();
+  }catch(err){
+    showCreateError(err.message || "Failed to create worker");
+  }finally{ btn.disabled=false; txt.textContent="Create worker"; }
+}
+
+async function confirmDelete(id, name){
+  if(!confirm(`Delete worker "${name}"? This cannot be undone.`)) return;
+  try{ await api(`/workers/${id}`, {method:"DELETE"}); showToast("Worker deleted","ok"); await loadWorkers(); }
+  catch(err){ showToast(err.message || "Delete failed","err"); }
+}
+
+async function openDetail(id){
+  $("#detail-backdrop").classList.add("open");
+  $("#detail-body").innerHTML="<div class='skeleton' style='height:120px'></div>";
+  $("#detail-history").innerHTML="";
+  try{
+    const w = await api(`/workers/${id}`);
+    const worker = w.worker || w.data || w;
+    const name = worker.name || worker.worker_name || "Worker";
+    $("#detail-body").innerHTML = `
+      <div style="font-weight:700;font-size:15px">${escapeAttr(name)}</div>
+      <div><span style="color:var(--muted)">URL:</span> <span class="mono" style="word-break:break-all">${escapeAttr(worker.url || worker.api_url || worker.endpoint || "")}</span></div>
+      <div><span style="color:var(--muted)">ID:</span> <span class="mono">${escapeAttr(String(worker.id||id))}</span></div>
+      <div><span style="color:var(--muted)">Created:</span> <span class="mono">${escapeAttr(formatDate(worker.created_at))}</span></div>
+      <div><span style="color:var(--muted)">Status:</span> ${escapeAttr(getStatus(worker))}</div>
+    `;
+    $("#detail-body").querySelectorAll("span,div").forEach(el=>{
+      if(el.childNodes.length===1 && el.childNodes[0].nodeType===3) el.textContent=el.textContent;
+    });
+    try{
+      const hist = await api(`/workers/${id}/history`);
+      const items = Array.isArray(hist)? hist : (hist.history || hist.data || []);
+      if(!items.length) $("#detail-history").innerHTML="<div style='color:var(--muted);font-size:12px'>No history yet.</div>";
+      else{
+        $("#detail-history").innerHTML = `<div style="font-weight:600;margin-bottom:4px">Recent checks</div>` + items.slice(0,20).map(h=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 8px;background:var(--secondary);border:1px solid var(--border);border-radius:8px"><span class="mono">${escapeAttr(String(h.status_code||h.http_code||h.code||""))} • ${escapeAttr(String(h.response_time_ms||h.latency_ms||""))}ms</span><span class="mono" style="color:var(--muted)">${escapeAttr(formatDate(h.checked_at||h.created_at))}</span></div>`).join("");
+        $("#detail-history").querySelectorAll("div").forEach(d=>{ /* textContent safe already */ });
+      }
+    }catch{ /* history optional */ }
+  }catch(err){ $("#detail-body").textContent = err.message; }
+}
+function closeDetail(){ $("#detail-backdrop").classList.remove("open"); }
+
+// Events
+$("#theme-toggle").addEventListener("click", toggleTheme);
+$("#menu-btn").addEventListener("click", ()=>$("#sidebar").classList.toggle("open"));
+$("#create-btn-top").addEventListener("click", openCreateModal);
+$("#empty-create-btn")?.addEventListener("click", openCreateModal);
+$("#create-close").addEventListener("click", closeCreateModal);
+$("#create-cancel").addEventListener("click", closeCreateModal);
+$("#create-backdrop").addEventListener("click", (e)=>{ if(e.target===e.currentTarget) closeCreateModal(); });
+$("#detail-close").addEventListener("click", closeDetail);
+$("#detail-backdrop").addEventListener("click", (e)=>{ if(e.target===e.currentTarget) closeDetail(); });
+$("#create-form").addEventListener("submit", handleCreate);
+$("#refresh-btn").addEventListener("click", async()=>{ try{ await loadWorkers(); showToast("Refreshed","ok"); }catch(err){ showToast(err.message,"err"); } });
+$("#retry-btn").addEventListener("click", init);
+$("#logout-btn").addEventListener("click", async()=>{
+  try{ await api("/auth/logout",{method:"POST"}); }catch{}
+  window.location.href="login.html";
+});
+document.addEventListener("keydown", (e)=>{
+  if(e.key==="Escape"){ closeCreateModal(); closeDetail(); $("#sidebar").classList.remove("open"); }
+  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="t"){ e.preventDefault(); toggleTheme(); }
+});
+
+// Init flow
+async function init(){
+  const errBox=$("#connection-error"); errBox.style.display="none";
+  updateThemeIcon(document.documentElement.dataset.theme);
+  lucide.createIcons();
+  try{
+    const ok = await loadUser();
+    if(!ok) return;
+    await loadWorkers();
+  }catch(err){
+    if(err.status!==401){
+      errBox.style.display="flex";
+      $("#connection-msg").textContent = err.message || "Cannot reach API. Check CORS and that backend allows credentials.";
+      $("#loading-state").style.display="none";
+    }
+  }
+}
+init();
+</script>
+</body>
+</html>
