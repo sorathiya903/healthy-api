@@ -27,11 +27,7 @@ MONGODB_URI = os.getenv("MONGODB_URI", "").strip()
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "healthy_api").strip()
 SESSION_SECRET = os.getenv("SESSION_SECRET", "").strip()
 FRONTEND_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "FRONTEND_ORIGINS", "http://localhost:5500,http://127.0.0.1:5500"
-    ).split(",")
-    if origin.strip()
+    "https://healthyapi.netlify.app"
 ]
 COOKIE_NAME = "healthy_api_session"
 SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
