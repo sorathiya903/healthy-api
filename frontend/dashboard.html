@@ -246,6 +246,16 @@ tr:last-child td{border-bottom:0}
         <button id="theme-toggle" class="icon-btn" type="button" aria-label="Switch to light theme">
           <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3a6 6 0 0 0 9 9c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9Z"/></svg>
         </button>
+        
+<button id="nav-live-test" class="btn btn-primary btn-sm" type="button">
+  <svg width="14" height="14" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="1.8"
+       aria-hidden="true">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+  </svg>
+  Live test
+</button>
+
         <div class="account-menu" id="account-menu">
           <button id="account-btn" class="account-btn" type="button" aria-haspopup="true" aria-expanded="false"><div class="avatar" id="avatar">U</div><span id="account-email" class="mono" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">—</span></button>
           <div id="account-dropdown" class="dropdown" role="menu">
@@ -596,11 +606,31 @@ function renderTables(){
     card.children[2].children[1].textContent=`${health.code} • ${health.latency}ms`;
     card.children[3].children[0].addEventListener("click",()=>openDetail(id));
     card.children[3].children[1].addEventListener("click",()=>confirmDelete(id,name));
-    oCards.appendChild(card.cloneNode(true));
-    const card2=card.cloneNode(true);
-    card2.children[3].children[0].addEventListener("click",()=>openDetail(id));
-    card2.children[3].children[1].addEventListener("click",()=>confirmDelete(id,name));
-    mCards.appendChild(card2);
+   
+    
+    
+function bindCardButtons(cardElement, workerId, workerName) {
+  const buttons = cardElement.querySelectorAll("button");
+
+  if (buttons[0]) {
+    buttons[0].addEventListener("click", () => openDetail(workerId));
+  }
+
+  if (buttons[1]) {
+    buttons[1].addEventListener("click", () =>
+      confirmDelete(workerId, workerName)
+    );
+  }
+}
+
+const overviewCard = card.cloneNode(true);
+bindCardButtons(overviewCard, id, name);
+oCards.appendChild(overviewCard);
+
+const monitorCard = card.cloneNode(true);
+bindCardButtons(monitorCard, id, name);
+mCards.appendChild(monitorCard);
+
   }
 
   // Re-bind mobile overview cards events (cloned lost)
@@ -795,6 +825,13 @@ async function init(){
   try{ await loadMonitors(); }catch(err){ $("#connection-msg").textContent=err.message; $("#connection-error").style.display="flex"; }
 }
 init();
+
+$("#nav-live-test").addEventListener("click", () => {
+  switchPage("tester");
+  $("#test-url").focus();
+});
+
+  
 </script>
 </body>
 </html>
