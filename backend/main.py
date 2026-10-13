@@ -17,7 +17,10 @@ from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pwdlib import PasswordHash
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -143,23 +146,44 @@ def set_session_cookie(response: Response, user_id: ObjectId) -> None:
     )
 
 
+
 def current_user(request: Request) -> dict[str, Any]:
-    token = request.cookies.get(COOKIE_NAME)
+    token = None
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+
     if not token:
-        raise HTTPException(status_code=401, detail="Please log in.")
+        token = request.cookies.get(COOKIE_NAME)
+
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Please log in."
+        )
 
     try:
         data = session_serializer.loads(
-            token, max_age=SESSION_MAX_AGE_SECONDS
+            token,
+            max_age=SESSION_MAX_AGE_SECONDS,
         )
         user_id = ObjectId(data["uid"])
     except (BadSignature, SignatureExpired, KeyError, ValueError):
-        raise HTTPException(status_code=401, detail="Session is invalid or expired.")
+        raise HTTPException(
+            status_code=401,
+            detail="Session is invalid or expired."
+        )
 
     user = users.find_one({"_id": user_id})
     if not user:
-        raise HTTPException(status_code=401, detail="Account no longer exists.")
+        raise HTTPException(
+            status_code=401,
+            detail="Account no longer exists."
+        )
+
     return user
+
 
 
 def validate_public_http_url(url: str) -> str:
@@ -297,58 +321,80 @@ def health() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # Authentication
 # ---------------------------------------------------------------------------
+@app.post("/auth/logout")
+def logout():
+    return {"message": "Logged out."}
+    
+@app.post("/auth/google")
+def google_login(payload: dict[str, str], response: Response):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=500,
+            detail="Google authentication is not configured."
+        )
 
-@app.post("/auth/register", status_code=status.HTTP_201_CREATED)
-def create_account(payload: AccountCreate, response: Response) -> dict[str, Any]:
-    email = str(payload.email).strip().lower()
+    credential = payload.get("credential")
+    if not credential:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing Google credential."
+        )
 
     try:
-        result = users.insert_one(
-            {
-                "email": email,
-                "password_hash": password_hash.hash(payload.password),
-                "created_at": utc_now(),
-            }
+        google_user = id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
         )
-    except DuplicateKeyError:
-        # Generic response avoids disclosing whether an email is registered.
-        raise HTTPException(status_code=409, detail="Unable to create account with these details.")
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Google credential."
+        )
 
-    user = users.find_one({"_id": result.inserted_id})
-    set_session_cookie(response, result.inserted_id)
-    return {"user": public_user(user)}
+    # Only accept verified Google email addresses.
+    if not google_user.get("email_verified"):
+        raise HTTPException(
+            status_code=401,
+            detail="Google email is not verified."
+        )
+
+    google_id = google_user["sub"]
+    email = google_user["email"].strip().lower()
+
+    # Link accounts by Google's stable subject ID, not email alone.
+    user = users.find_one({"google_id": google_id})
+
+    if not user:
+        existing = users.find_one({"email": email})
+
+        if existing:
+            # Do not silently link an existing password account.
+            raise HTTPException(
+                status_code=409,
+                detail="An account already exists for this email."
+            )
+
+        user_doc = {
+            "google_id": google_id,
+            "email": email,
+            "created_at": utc_now(),
+        }
+        result = users.insert_one(user_doc)
+        user = users.find_one({"_id": result.inserted_id})
+
+    # Issue our own signed session token.
+    session_token = session_serializer.dumps({
+        "uid": str(user["_id"]),
+        "nonce": secrets.token_urlsafe(12),
+    })
+
+    return {
+        "user": public_user(user),
+        "session_token": session_token,
+    }
 
 
-@app.post("/auth/login")
-def login(payload: LoginRequest, response: Response) -> dict[str, Any]:
-    email = str(payload.email).strip().lower()
-    user = users.find_one({"email": email})
-
-    if not user or not password_hash.verify(payload.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
-
-    set_session_cookie(response, user["_id"])
-    print("LOGIN DEBUG: session cookie set")
-    print("LOGIN DEBUG: response headers:", response.headers)
-
-    return {"user": public_user(user)}
-    
-
-
-@app.post("/auth/logout")
-def logout(response: Response) -> dict[str, str]:
-    clear_session_cookie(response)
-    return {"message": "Logged out."}
-
-
-@app.get("/auth/me")
-def get_current_account(request: Request) -> dict[str, Any]:
-    return {"user": public_user(current_user(request))}
-
-
-# ---------------------------------------------------------------------------
-# Live testing
-# ---------------------------------------------------------------------------
 
 @app.post("/tests/live")
 async def run_live_test(
