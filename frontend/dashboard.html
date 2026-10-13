@@ -602,8 +602,7 @@ function renderTables(){
   }
 
   // Re-bind mobile overview cards events (cloned lost)
-  $$("#overview-cards.mcard").forEach((c,i)=>{
-    const w=monitors[i]; if(!w) return;
+document.querySelectorAll('#overview-cards.mcard').forEach((c,i)=>{  const w=monitors[i]; if(!w) return;
     const id=w.id||w._id;
     c.querySelectorAll("button")[0].addEventListener("click",()=>openDetail(id));
     c.querySelectorAll("button")[1].addEventListener("click",()=>confirmDelete(id, w.name));
