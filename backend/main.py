@@ -116,26 +116,30 @@ def public_user(user: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def set_session_cookie(response: Response, user_id: ObjectId) -> None:
-    token = session_serializer.dumps({"uid": str(user_id), "nonce": secrets.token_urlsafe(12)})
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=token,
-        max_age=SESSION_MAX_AGE_SECONDS,
-        httponly=True,
-        secure=os.getenv("COOKIE_SECURE", "true").lower() == "true",
-        samesite="lax",
-        path="/",
-    )
-
-
 def clear_session_cookie(response: Response) -> None:
     response.delete_cookie(
         key=COOKIE_NAME,
         path="/",
         httponly=True,
-        secure=os.getenv("COOKIE_SECURE", "true").lower() == "true",
-        samesite="lax",
+        secure=True,
+        samesite="none",
+    )
+
+
+def set_session_cookie(response: Response, user_id: ObjectId) -> None:
+    token = session_serializer.dumps({
+        "uid": str(user_id),
+        "nonce": secrets.token_urlsafe(12)
+    })
+
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        max_age=SESSION_MAX_AGE_SECONDS,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
     )
 
 
