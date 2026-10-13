@@ -29,7 +29,7 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", "").strip()
 FRONTEND_ORIGINS = [
     "https://goodapi.netlify.app"
 ]
-COOKIE_NAME = "healthy_api_session"
+COOKIE_NAME = "good_api_session"
 SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 LIVE_TEST_TIMEOUT_SECONDS = 10
 MAX_RESPONSE_BYTES = 512 * 1024  # 512 KiB
