@@ -541,9 +541,13 @@ async def create_worker(
 
     # Initial live test to provide immediate feedback.
     test_result = await live_test(url, "GET")
-    test_result["expected_status"] = payload.expected_status
-    test_result["healthy"] = test_result.get("status_code") == payload.expected_status
+    healthy = test_result.get("status_code") == payload.expected_status
 
+    test_result["expected_status"] = payload.expected_status
+
+    test_result["healthy"] = healthy
+
+    test_result["ok"] = healthy
     workers.update_one(
         {"_id": result.inserted_id, "owner_id": user["_id"]},
         {
