@@ -298,7 +298,7 @@ tr:last-child td{border-bottom:0}
             <form id="tester-form" novalidate>
               <div class="field"><label class="field-label" for="test-url">Request URL</label><input id="test-url" class="input mono" type="url" inputmode="url" placeholder="https://api.example.com/health" required /><div class="field-error" id="test-url-err"></div></div>
               <div class="field" style="max-width:160px"><label class="field-label" for="test-method">Method</label><select id="test-method" class="select"><option value="GET">GET</option><option value="HEAD">HEAD</option></select></div>
-              <div style="display:flex; gap:8px; margin-top:8px"><button id="test-btn" class="btn btn-primary" type="submit">Test API</button><button id="test-clear" class="btn" type="button">Clear</button></div>
+              <div style="display:flex; gap:8px; margin-top:8px"><button id="test-btn" class="btn btn-primary" type="submit">Test API</button><button id="test-clear" class="btn" type="button">Close</button></div>
             </form>
 
             <div id="tester-result" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px">
@@ -850,6 +850,27 @@ $("#test-clear").addEventListener("click", () => {
 
   // Return to the default Overview page
   switchPage("overview");
+});
+
+/* Close sidebar when clicking outside or opening Live Tester */
+document.addEventListener("click", (event) => {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar || !sidebar.classList.contains("open")) return;
+
+  const clickedInsideSidebar = sidebar.contains(event.target);
+  const clickedMenuButton = event.target.closest(
+    "#menu-toggle, #menu-btn, .menu-toggle, .hamburger"
+  );
+
+  // Close when clicking outside the sidebar
+  if (!clickedInsideSidebar && !clickedMenuButton) {
+    sidebar.classList.remove("open");
+  }
+
+  // Close sidebar when Live Test is clicked
+  if (event.target.closest("#nav-live-test")) {
+    sidebar.classList.remove("open");
+  }
 });
 
 </script>
