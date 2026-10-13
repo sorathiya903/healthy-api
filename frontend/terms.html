@@ -1,0 +1,780 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Terms of Service | goodAPI</title>
+  <meta name="description" content="Read the goodAPI Terms of Service to understand the rules, responsibilities, limitations, and conditions for using our API monitoring and testing platform." />
+  <meta name="theme-color" content="#0B0D10" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://goodapi.netlify.app/terms.html" />
+  <link rel="icon" href="/favicon.png" type="image/png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d10;
+      --surface: #111418;
+      --surface-hover: #171b21;
+      --border: #252a33;
+      --text: #f1f3f5;
+      --muted: #9299a5;
+      --accent: #8b9cff;
+      --green: #67e8a5;
+      --content-width: 820px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 95px;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -220px, #1a2134 0%, transparent 65%),
+        var(--bg);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+
+    .container {
+      width: min(100% - 40px, 1120px);
+      margin-inline: auto;
+    }
+
+    /* Navigation */
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgb(11 13 16 / 88%);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgb(255 255 255 / 7%);
+    }
+
+    .nav-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      flex-shrink: 0;
+    }
+
+    .brand img {
+      width: 31px;
+      height: 31px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      padding: 9px 13px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--text);
+      background: var(--surface-hover);
+    }
+
+    .nav-links .login-link {
+      color: #0b0d10;
+      background: var(--text);
+      font-weight: 700;
+      margin-left: 5px;
+    }
+
+    .nav-links .login-link:hover {
+      background: #dce1e8;
+      color: #0b0d10;
+    }
+
+    .menu-toggle {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 21px;
+    }
+
+    /* Page header */
+
+    .page-header {
+      padding: 76px 0 45px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 11px;
+      border: 1px solid #303746;
+      border-radius: 100px;
+      color: #c1c9ff;
+      background: rgb(139 156 255 / 7%);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.3px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    h1 {
+      margin: 22px 0 12px;
+      font-size: clamp(34px, 6vw, 54px);
+      line-height: 1.13;
+      letter-spacing: -2.5px;
+      font-weight: 800;
+    }
+
+    .page-header p {
+      max-width: 550px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .updated {
+      margin-top: 22px;
+      color: #7d8592;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+    }
+
+    /* Terms document */
+
+    .document-wrap {
+      padding-bottom: 90px;
+    }
+
+    .document {
+      max-width: var(--content-width);
+      margin: 0 auto;
+      padding: clamp(22px, 5vw, 48px);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(
+        145deg,
+        rgb(255 255 255 / 2.2%),
+        transparent 40%
+      ), var(--surface);
+      box-shadow: 0 25px 90px rgb(0 0 0 / 14%);
+    }
+
+    .intro {
+      padding: 20px 22px;
+      margin-bottom: 36px;
+      border: 1px solid #30394b;
+      border-radius: 12px;
+      background: rgb(139 156 255 / 5%);
+      color: #c1c8d5;
+      font-size: 14px;
+    }
+
+    .intro strong {
+      color: var(--text);
+    }
+
+    .terms-section {
+      margin-top: 35px;
+      scroll-margin-top: 105px;
+    }
+
+    .terms-section:first-of-type {
+      margin-top: 0;
+    }
+
+    h2 {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 0 12px;
+      font-size: 19px;
+      line-height: 1.5;
+      letter-spacing: -0.45px;
+    }
+
+    .section-number {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .terms-section p {
+      margin: 10px 0;
+      color: #aeb5c0;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .terms-section ul {
+      padding-left: 22px;
+      margin: 12px 0;
+      color: #aeb5c0;
+      font-size: 14px;
+    }
+
+    .terms-section li {
+      padding-left: 4px;
+      margin: 7px 0;
+    }
+
+    .terms-section li::marker {
+      color: #6677bc;
+    }
+
+    .terms-section a {
+      color: #b2bdff;
+      text-decoration: underline;
+      text-decoration-color: #555f88;
+      text-underline-offset: 3px;
+    }
+
+    .terms-section a:hover {
+      color: #d6dcff;
+    }
+
+    .document-divider {
+      height: 1px;
+      margin-top: 35px;
+      background: var(--border);
+    }
+
+    /* Footer */
+
+    .footer {
+      border-top: 1px solid var(--border);
+      background: rgb(9 11 14 / 75%);
+    }
+
+    .footer-main {
+      min-height: 120px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 30px;
+      padding-block: 30px;
+    }
+
+    .footer-brand p {
+      margin: 10px 0 0;
+      max-width: 300px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px 22px;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      font-size: 12px;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover,
+    .footer-links a.active {
+      color: var(--text);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 0;
+      border-top: 1px solid rgb(255 255 255 / 6%);
+      color: #727a87;
+      font-size: 11px;
+    }
+
+    .footer-bottom span:last-child {
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    @media (max-width: 680px) {
+      .container {
+        width: min(100% - 32px, 1120px);
+      }
+
+      .nav-inner {
+        min-height: 66px;
+      }
+
+      .menu-toggle {
+        display: grid;
+        place-items: center;
+      }
+
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: calc(100% + 1px);
+        left: 0;
+        right: 0;
+        padding: 12px 16px 18px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+        background: #0e1116;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-links.open {
+        display: flex;
+      }
+
+      .nav-links a {
+        padding: 12px;
+      }
+
+      .nav-links .login-link {
+        margin: 5px 0 0;
+        text-align: center;
+      }
+
+      .page-header {
+        padding: 54px 0 32px;
+      }
+
+      h1 {
+        letter-spacing: -1.5px;
+      }
+
+      .document-wrap {
+        padding-bottom: 55px;
+      }
+
+      .document {
+        padding: 22px 19px;
+        border-radius: 14px;
+      }
+
+      .intro {
+        padding: 16px;
+      }
+
+      h2 {
+        font-size: 17px;
+        gap: 9px;
+      }
+
+      .footer-main {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 24px;
+        padding-block: 30px;
+      }
+
+      .footer-links {
+        gap: 14px 20px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 7px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="/" aria-label="goodAPI home">
+        <img src="/favicon.png" alt="" width="31" height="31" />
+        good<span>API</span>
+      </a>
+
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-controls="navLinks"
+        aria-expanded="false"
+      >☰</button>
+
+      <nav class="nav-links" id="navLinks" aria-label="Main navigation">
+        <a href="/" >Home</a>
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a class="login-link" href="/#login">Log in ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-header container">
+      <span class="eyebrow">LEGAL DOCUMENTATION</span>
+      <h1>Terms of Service</h1>
+      <p>
+        The terms that apply when you use goodAPI to monitor,
+        test, and inspect API endpoints.
+      </p>
+      <div class="updated">Last updated: October 13, 2026</div>
+    </section>
+
+    <section class="document-wrap container">
+      <article class="document">
+        <div class="intro">
+          <strong>Please read these terms carefully.</strong>
+          By accessing or using goodAPI, you agree to these Terms of
+          Service. If you do not agree, do not use the service.
+          These terms should be reviewed and adapted to your actual
+          service operations before publication.
+        </div>
+
+        <section class="terms-section" id="acceptance">
+          <h2><span class="section-number">01</span> Acceptance of Terms</h2>
+          <p>
+            These Terms of Service govern your access to and use of
+            goodAPI, a web-based API monitoring and testing platform.
+            By creating an account or using any part of the service,
+            you agree to these terms and applicable laws.
+          </p>
+        </section>
+
+        <section class="terms-section" id="service">
+          <h2><span class="section-number">02</span> Description of Service</h2>
+          <p>
+            goodAPI provides tools for testing HTTP endpoints, running
+            scheduled API health checks, inspecting response information,
+            and reviewing monitoring history. Available features may
+            change as the service develops.
+          </p>
+          <p>
+            Monitoring results reflect checks performed by goodAPI at
+            particular times. They are not a guarantee that an API will
+            remain available or behave the same way between checks.
+          </p>
+        </section>
+
+        <section class="terms-section" id="accounts">
+          <h2><span class="section-number">03</span> Accounts and Security</h2>
+          <p>
+            Some features require an account. You agree to provide
+            accurate information and to take reasonable steps to keep
+            your account and login credentials secure.
+          </p>
+          <ul>
+            <li>You are responsible for activity performed through your account.</li>
+            <li>Do not share access in a way that compromises your account or the service.</li>
+            <li>Notify us if you believe your account has been accessed without authorization.</li>
+            <li>Do not create accounts or impersonate others using misleading information.</li>
+          </ul>
+        </section>
+
+        <section class="terms-section" id="acceptable-use">
+          <h2><span class="section-number">04</span> Acceptable Use</h2>
+          <p>
+            You may use goodAPI only for lawful purposes and for endpoints
+            you own or are authorized to test. You must not:
+          </p>
+          <ul>
+            <li>Use the service to attack, overload, disrupt, or interfere with systems or networks.</li>
+            <li>Probe private, internal, or otherwise unauthorized endpoints.</li>
+            <li>Attempt to bypass security controls, usage limits, or access restrictions.</li>
+            <li>Use the service for unlawful surveillance, fraud, or malicious activity.</li>
+            <li>Abuse the monitoring system with excessive or deliberately harmful requests.</li>
+            <li>Reverse engineer or interfere with the service except where applicable law permits it.</li>
+          </ul>
+          <p>
+            We may restrict or suspend access when reasonably necessary
+            to protect goodAPI, other users, or third-party systems.
+          </p>
+        </section>
+
+        <section class="terms-section" id="monitoring">
+          <h2><span class="section-number">05</span> Monitoring and Requests</h2>
+          <p>
+            When you configure a monitor, goodAPI sends HTTP requests to
+            the URL you provide. You are responsible for ensuring that
+            you have permission to send those requests and that they
+            comply with the target service's rules.
+          </p>
+          <p>
+            Monitoring frequency, request timing, network conditions,
+            timeouts, and third-party responses can affect results.
+            Checks may be delayed, interrupted, or unsuccessful.
+          </p>
+          <p>
+            You must configure monitoring intervals responsibly and
+            avoid using the service in ways that place unreasonable
+            load on monitored endpoints.
+          </p>
+        </section>
+
+        <section class="terms-section" id="availability">
+          <h2><span class="section-number">06</span> Availability and Changes</h2>
+          <p>
+            We aim to keep goodAPI useful and available, but we do not
+            promise uninterrupted access, continuous monitoring, or
+            error-free operation. Maintenance, hosting limitations,
+            network failures, and other circumstances may affect service.
+          </p>
+          <p>
+            We may modify, suspend, or discontinue features when
+            reasonably necessary. Where appropriate, we will make
+            reasonable efforts to communicate significant changes.
+          </p>
+        </section>
+
+        <section class="terms-section" id="data">
+          <h2><span class="section-number">07</span> Data and Privacy</h2>
+          <p>
+            Your use of goodAPI is also subject to our
+            <a href="/privacy.html">Privacy Policy</a>, which explains
+            how information is handled.
+          </p>
+          <p>
+            You should not submit passwords, private credentials,
+            confidential information, or sensitive response content
+            unless the service explicitly supports the relevant use
+            and you understand the associated risks.
+          </p>
+        </section>
+
+        <section class="terms-section" id="intellectual-property">
+          <h2><span class="section-number">08</span> Intellectual Property</h2>
+          <p>
+            The goodAPI service, branding, interface, and associated
+            materials are owned by their respective rights holders or
+            used with permission. These terms do not transfer ownership
+            of those rights to you.
+          </p>
+          <p>
+            You retain the rights you hold in your own content and
+            remain responsible for ensuring that your use of third-party
+            materials is authorized.
+          </p>
+        </section>
+
+        <section class="terms-section" id="disclaimers">
+          <h2><span class="section-number">09</span> Disclaimers</h2>
+          <p>
+            To the extent permitted by applicable law, goodAPI is
+            provided on an “as is” and “as available” basis without
+            warranties that are not expressly provided.
+          </p>
+          <p>
+            Health-check results are informational. You should not rely
+            solely on goodAPI for critical infrastructure, emergency
+            response, or decisions requiring guaranteed availability.
+          </p>
+        </section>
+
+        <section class="terms-section" id="liability">
+          <h2><span class="section-number">10</span> Limitation of Liability</h2>
+          <p>
+            To the extent permitted by applicable law, goodAPI and its
+            operator will not be responsible for indirect, incidental,
+            special, or consequential losses arising from your use of
+            or inability to use the service.
+          </p>
+          <p>
+            Nothing in these terms excludes or limits liability where
+            doing so would be unlawful. Any applicable legal protections
+            remain in effect.
+          </p>
+        </section>
+
+        <section class="terms-section" id="termination">
+          <h2><span class="section-number">11</span> Suspension and Termination</h2>
+          <p>
+            You may stop using goodAPI at any time. We may suspend or
+            terminate access when necessary to address misuse, security
+            risks, violations of these terms, or operational requirements,
+            subject to applicable law.
+          </p>
+        </section>
+
+        <section class="terms-section" id="changes">
+          <h2><span class="section-number">12</span> Changes to These Terms</h2>
+          <p>
+            We may update these terms as goodAPI evolves. The revised
+            version will be published on this page with an updated
+            revision date. Continued use after changes take effect
+            may constitute acceptance where permitted by law.
+          </p>
+        </section>
+
+        <section class="terms-section" id="law">
+          <h2><span class="section-number">13</span> Governing Law</h2>
+          <p>
+            These terms are subject to applicable laws. Any governing
+            law or dispute-resolution provision should be completed
+            based on the operator's circumstances and applicable
+            legal requirements before the page is published.
+          </p>
+        </section>
+
+        <section class="terms-section" id="contact">
+          <h2><span class="section-number">14</span> Contact</h2>
+          <p>
+            If you have questions about these terms, contact the
+            goodAPI operator through the official contact method
+            published on the website.
+          </p>
+          <p>
+            Please add a monitored contact email or support page here
+            before publishing the final version.
+          </p>
+        </section>
+
+        <div class="document-divider"></div>
+
+        <p style="font-size:12px;color:#727a87;margin-top:24px">
+          These terms are a starting template, not legal advice.
+          Review them for your actual service, policies, and applicable law.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-main">
+        <div class="footer-brand">
+          <a class="brand" href="/" aria-label="goodAPI home">
+            <img src="/favicon.png" alt="" width="31" height="31" />
+            good<span>API</span>
+          </a>
+          <p>
+            API monitoring and health checks, designed for developers.
+          </p>
+        </div>
+
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="/">Home</a>
+          <a href="/dashboard.html">Dashboard</a>
+          <a href="/privacy.html">Privacy Policy</a>
+          <a href="/#login">Login</a>
+        </nav>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© <span id="year"></span> goodAPI. All rights reserved.</span>
+        <span>Built for developers.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const menuToggle = document.getElementById("menuToggle");
+    const navLinks = document.getElementById("navLinks");
+
+    menuToggle.addEventListener("click", () => {
+      const isOpen = navLinks.classList.toggle("open");
+
+      menuToggle.setAttribute("aria-expanded", String(isOpen));
+      menuToggle.setAttribute(
+        "aria-label",
+        isOpen ? "Close navigation menu" : "Open navigation menu"
+      );
+      menuToggle.textContent = isOpen ? "×" : "☰";
+    });
+
+    navLinks.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        navLinks.classList.remove("open");
+        menuToggle.setAttribute("aria-expanded", "false");
+        menuToggle.setAttribute("aria-label", "Open navigation menu");
+        menuToggle.textContent = "☰";
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      if (
+        navLinks.classList.contains("open") &&
+        !navLinks.contains(event.target) &&
+        !menuToggle.contains(event.target)
+      ) {
+        navLinks.classList.remove("open");
+        menuToggle.setAttribute("aria-expanded", "false");
+        menuToggle.setAttribute("aria-label", "Open navigation menu");
+        menuToggle.textContent = "☰";
+      }
+    });
+
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
+  </script>
+</body>
+</html>
