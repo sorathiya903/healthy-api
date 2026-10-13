@@ -545,7 +545,7 @@ $("#refresh-btn").addEventListener("click", async()=>{ try{ await loadWorkers();
 $("#retry-btn").addEventListener("click", init);
 $("#logout-btn").addEventListener("click", async()=>{
   try{ await api("/auth/logout",{method:"POST"}); }catch{}
-  window.location.href="login.html";
+  window.location.href="create-account.html";
 });
 document.addEventListener("keydown", (e)=>{
   if(e.key==="Escape"){ closeCreateModal(); closeDetail(); $("#sidebar").classList.remove("open"); }
