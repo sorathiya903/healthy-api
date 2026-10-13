@@ -1,594 +1,455 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <title>goodAPI — Authentication</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <script src="config.js"></script>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>goodAPI — Authentication</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+// 1. Apply theme BEFORE paint — prevents flash
+(function(){
+  try{
+    const s = localStorage.getItem("goodapi-theme");
+    const t = (s === "light" || s === "dark") ? s : "dark";
+    document.documentElement.setAttribute("data-theme", t);
+  }catch(e){ document.documentElement.setAttribute("data-theme","dark"); }
+})();
+</script>
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-/* Graphite Edge Design System */
 :root{
-  --bg:#0A0A0C;
-  --surface:#111114;
-  --elevated:#161619;
-  --text:#FFFFFF;
-  --text-secondary:#888888;
-  --border:#29292E;
-  --accent:#D4FF00;
-  --accent-hover:#E0FF4D;
-  --error:#FF3B30;
-  --error-bg:rgba(255,59,48,0.08);
-  --success:#D4FF00;
-  --radius:12px;
-  --radius-sm:8px;
-  --font-sans:"Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono:"Geist Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans:"Geist", Inter, -apple-system, sans-serif;
+  --font-mono:"Geist Mono", "IBM Plex Mono", monospace;
+  --radius:14px; --radius-sm:10px; --radius-full:999px;
 }
-
+[data-theme="dark"]{
+  --bg:#0A0A0C; --surface:#111114; --elevated:#161619; --secondary:#1C1C20;
+  --text:#FFFFFF; --muted:#92929D; --faint:#5A5A66;
+  --border:#27272A; --border-strong:#323238;
+  --accent:#D4FF00; --accent-hover:#E0FF4D;
+  --error:#FF3B30; --error-bg:rgba(255,59,48,0.1);
+}
+[data-theme="light"]{
+  --bg:#F7F8FA; --surface:#FFFFFF; --elevated:#FFFFFF; --secondary:#F1F3F5;
+  --text:#17181C; --muted:#717680; --faint:#9BA0AB;
+  --border:#E4E7EC; --border-strong:#D0D5DD;
+  --accent:#65A30D; --accent-hover:#4D7C0F;
+  --error:#DC2626; --error-bg:rgba(220,38,38,0.06);
+}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--font-sans);
-  font-size:14px;
-  line-height:1.5;
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--font-sans); font-size:14px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;
+  transition:background-color 160ms ease, color 160ms ease;
 }
-a{color:var(--text-secondary); text-decoration:none}
-a:hover{color:var(--text)}
 button{font-family:inherit}
 
+/* Grid background */
 .bg-grid{
-  position:fixed; inset:0;
+  position:fixed; inset:0; pointer-events:none;
   background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size:32px 32px;
-  opacity:0.12;
-  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
-  pointer-events:none;
+  background-size:32px 32px; opacity:0.18;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 35%, transparent 70%);
 }
 
 /* Header */
 .site-header{
-  position:sticky; top:0; z-index:10;
-  border-bottom:1px solid var(--border);
-  background:rgba(10,10,12,0.8);
-  backdrop-filter:blur(12px);
+  height:56px; border-bottom:1px solid var(--border);
+  background:color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter:blur(12px); position:sticky; top:0; z-index:20;
 }
 .header-inner{
-  max-width:1120px; margin:0 auto;
-  height:56px; padding:0 24px;
-  display:flex; align-items:center; justify-content:space-between;
+  max-width:1120px; margin:0 auto; height:100%;
+  padding:0 24px; display:flex; align-items:center; justify-content:space-between;
 }
-.wordmark{display:flex; align-items:center; gap:10px; color:var(--text)}
+.wordmark{display:flex; align-items:center; gap:10px}
 .wordmark-icon{
-  width:28px; height:28px; border-radius:8px;
-  background:var(--elevated); border:1px solid var(--border);
-  display:inline-flex; align-items:center; justify-content:center;
-  position:relative; color:var(--text);
+  width:28px; height:28px; border-radius:8px; background:var(--surface);
+  border:1px solid var(--border); display:grid; place-items:center; color:var(--text);
 }
-.pulse-dot{
-  position:absolute; top:7px; right:7px;
-  width:5px; height:5px; border-radius:50%;
-  background:var(--accent); box-shadow:0 0 0 0 var(--accent);
-  animation:pulse 2s infinite;
-}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--accent);position:absolute;top:6px;right:6px;box-shadow:0 0 0 0 var(--accent);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(212,255,0,0.5)}70%{box-shadow:0 0 0 6px rgba(212,255,0,0)}100%{box-shadow:0 0 0 0 rgba(212,255,0,0)}}
-.wordmark-text{font-weight:600; letter-spacing:-0.02em; font-size:14px}
-.wordmark-label{
-  font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em;
-  color:var(--text-secondary); border-left:1px solid var(--border);
-  padding-left:10px; margin-left:2px; font-weight:500;
+.wordmark-text{font-weight:700; letter-spacing:-0.03em; font-size:14.5px}
+.wordmark-label{font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; color:var(--muted); border-left:1px solid var(--border); padding-left:10px; margin-left:2px}
+.header-actions{display:flex; align-items:center; gap:10px}
+
+/* Theme toggle */
+.theme-toggle{
+  width:36px; height:36px; border-radius:var(--radius-full);
+  border:1px solid var(--border); background:var(--surface);
+  display:grid; place-items:center; cursor:pointer; color:var(--muted);
+  transition:all 150ms ease;
 }
-.header-switch{
-  height:32px; padding:0 14px; border-radius:999px;
-  background:var(--surface); border:1px solid var(--border);
-  color:var(--text); font-size:13px; font-weight:500;
-  transition:all 160ms ease;
-}
-.header-switch:hover{border-color:#3A3A40; background:var(--elevated)}
+.theme-toggle:hover{border-color:var(--border-strong); color:var(--text); background:var(--secondary)}
+.theme-toggle:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+.theme-toggle svg{width:16px;height:16px}
 
 /* Main */
-.main{display:flex; justify-content:center; padding:48px 20px 32px}
-.auth-wrapper{width:100%; max-width:400px}
+.main{min-height:calc(100vh - 56px); display:grid; place-items:center; padding:32px 16px 40px}
+.auth-wrapper{width:100%; max-width:400px; display:grid; gap:16px}
 
 /* Session check */
-.session-check{
+.session-box{
   display:flex; align-items:center; gap:8px;
-  font-family:var(--font-mono); font-size:11px; letter-spacing:0.02em;
-  color:var(--text-secondary); background:var(--surface);
-  border:1px solid var(--border); border-radius:999px;
-  padding:6px 12px; width:fit-content; margin:0 auto 16px;
-  transition:opacity 200ms ease, transform 200ms ease;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-full);
+  padding:7px 14px; width:fit-content; margin:0 auto;
+  font-family:var(--font-mono); font-size:11px; color:var(--muted);
 }
-.session-dot{width:6px; height:6px; border-radius:50%; background:var(--text-secondary)}
-.session-check.is-success .session-dot{background:var(--accent); box-shadow:0 0 8px var(--accent)}
-.session-check.is-error .session-dot{background:var(--error)}
-.session-check.is-hidden{opacity:0; transform:translateY(-4px); pointer-events:none}
+.session-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+.session-box.is-hidden{display:none}
 
 /* Card */
 .auth-card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:24px;
-  position:relative;
-  overflow:hidden;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:28px 24px 20px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  position:relative; overflow:hidden;
 }
-.auth-card::before{
-  content:""; position:absolute; top:0; left:0; right:0; height:1px;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-}
-.card-top{margin-bottom:20px}
-.form-title{margin:0; font-size:20px; line-height:1.2; letter-spacing:-0.03em; font-weight:600}
-.form-subtitle{margin:8px 0 0; color:var(--text-secondary); font-size:13px; line-height:1.5}
+[data-theme="dark"] .auth-card{box-shadow:none}
+.auth-card::before{content:""; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)}
+[data-theme="light"] .auth-card::before{background:linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent)}
+.card-head{margin-bottom:22px}
+.title{margin:0; font-size:22px; font-weight:700; letter-spacing:-0.03em; line-height:1.15}
+.subtitle{margin:8px 0 0; font-size:13.5px; color:var(--muted); line-height:1.5}
 
 /* Alert */
-.form-alert{
-  border-radius:var(--radius-sm);
-  border:1px solid var(--border);
-  padding:10px 12px;
-  font-size:13px; line-height:1.4;
-  margin-bottom:16px;
-  background:var(--elevated);
-}
-.form-alert[data-type="error"]{border-color:rgba(255,59,48,0.25); background:var(--error-bg); color:#FF8A82}
-.form-alert[data-type="success"]{border-color:rgba(212,255,0,0.25); background:rgba(212,255,0,0.07); color:var(--text)}
-.form-alert[data-type="info"]{color:var(--text-secondary)}
-
-/* Forms */
-.auth-form{display:grid; gap:16px; transition:opacity 180ms ease, transform 180ms ease}
-.auth-form.is-hidden{position:absolute; opacity:0; pointer-events:none; transform:translateY(6px)}
-@media (prefers-reduced-motion: reduce){ .auth-form{transition:none} }
-
-.field{display:grid; gap:6px}
-.field-label{
-  font-family:var(--font-mono); font-size:11px; font-weight:500;
-  letter-spacing:0.04em; text-transform:uppercase; color:var(--text-secondary);
-}
-.field-input{
-  width:100%; height:40px; padding:0 12px;
+.alert{
   border-radius:var(--radius-sm); border:1px solid var(--border);
-  background:var(--bg); color:var(--text);
-  font-size:14px; outline:none; transition:border-color 150ms ease, box-shadow 150ms ease;
+  padding:10px 12px; font-size:13px; line-height:1.4; margin-bottom:16px;
+  background:var(--elevated); display:none;
 }
-.field-input::placeholder{color:#55555E}
-.field-input:hover{border-color:#3A3A40}
-.field-input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(212,255,0,0.15)}
-.field-input[aria-invalid="true"]{border-color:var(--error); box-shadow:0 0 0 3px rgba(255,59,48,0.15)}
+.alert.show{display:block}
+.alert.error{border-color:rgba(255,59,48,0.25); background:var(--error-bg); color:#FF8A82}
+[data-theme="light"] .alert.error{color:var(--error)}
+.alert.info{color:var(--muted)}
 
-.input-with-action{position:relative; display:flex; align-items:center}
-.input-with-action .field-input{padding-right:40px; flex:1}
-.icon-btn{
-  position:absolute; right:4px; width:32px; height:32px;
-  border-radius:6px; border:1px solid transparent; background:transparent;
-  display:grid; place-items:center; color:var(--text-secondary); cursor:pointer;
-  transition:all 150ms ease;
+/* Google area */
+.google-area{
+  border:1px solid var(--border); background:var(--elevated);
+  border-radius:12px; padding:14px; display:grid; gap:12px;
+  transition:opacity 150ms ease;
 }
-.icon-btn:hover{background:var(--elevated); color:var(--text); border-color:var(--border)}
-.icon-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-
-.eye-icon{width:16px; height:16px; display:block; position:relative}
-.eye-icon::before{content:""; position:absolute; inset:2px 1px; border:1.2px solid currentColor; border-radius:10px 2px; transform:rotate(0deg)}
-.eye-icon::after{content:""; position:absolute; width:4px; height:4px; border-radius:50%; border:1.2px solid currentColor; left:50%; top:50%; transform:translate(-50%,-50%)}
-.icon-btn.is-showing .eye-icon::after{width:10px; height:1.2px; background:currentColor; border:0; border-radius:999px; transform:translate(-50%,-50%) rotate(-28deg)}
-
-.field-hint{margin:0; font-family:var(--font-mono); font-size:11px; color:#6A6A72; line-height:1.4}
-.field-error{min-height:16px; font-size:12px; color:var(--error); line-height:1.3}
-
-/* Buttons */
-.btn{
-  height:40px; border-radius:var(--radius-sm); border:1px solid var(--border);
-  font-size:14px; font-weight:500; letter-spacing:-0.01em;
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  cursor:pointer; position:relative; overflow:hidden;
-  transition:all 160ms ease;
+.google-area.is-busy{opacity:0.6; pointer-events:none}
+.gsi-wrapper{display:grid; place-items:center; min-height:40px}
+.gsi-wrapper .g_id_signin{width:100%}
+/* Fallback button that fits design if GSI fails */
+.fallback-google{
+  height:40px; width:100%; border-radius:9px; border:1px solid var(--border-strong);
+  background:var(--surface); color:var(--text); font-weight:600; font-size:14px;
+  display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer;
+  transition:all 150ms;
 }
-.btn-primary{background:var(--accent); color:#0A0A0C; border-color:var(--accent); font-weight:600}
-.btn-primary:hover{background:var(--accent-hover); border-color:var(--accent-hover)}
-.btn-primary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.btn:disabled{opacity:0.6; cursor:not-allowed}
-.btn-loader{width:14px; height:14px; border-radius:50%; border:2px solid rgba(10,10,12,0.2); border-top-color:#0A0A0C; display:none; animation:spin 600ms linear infinite}
-.btn.is-loading .btn-loader{display:block}
-.btn.is-loading .btn-text{opacity:0.85}
+.fallback-google:hover{background:var(--secondary); border-color:var(--border-strong)}
+.fallback-google:disabled{opacity:0.6; cursor:not-allowed}
+.divider{display:flex; align-items:center; gap:12px; color:var(--faint); font-family:var(--font-mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase}
+.divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--border)}
+.support{font-size:12.5px; color:var(--muted); text-align:center; line-height:1.5}
+
+.card-footer{
+  margin-top:18px; padding-top:14px; border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-mono); font-size:11px; color:var(--faint);
+}
+.footer-dot{width:4px;height:4px;border-radius:50%;background:var(--accent)}
+
+.loader{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--text);display:inline-block;animation:spin 0.7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-.form-switch-line{margin:2px 0 0; text-align:center; font-size:13px; color:var(--text-secondary)}
-.link-btn{
-  background:none; border:0; padding:0; color:var(--text); text-decoration:underline;
-  text-underline-offset:3px; cursor:pointer; font-size:13px;
-}
-.link-btn:hover{color:var(--accent)}
-
-.card-meta{
-  margin-top:18px; padding-top:14px; border-top:1px solid var(--border);
-  display:flex; align-items:center; gap:8px;
-  font-family:var(--font-mono); font-size:10px; letter-spacing:0.04em; color:#6A6A72;
-}
-.meta-dot{width:4px; height:4px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px rgba(212,255,0,0.5)}
-
-.auth-footer{
-  display:flex; align-items:center; justify-content:center; gap:10px;
-  margin-top:18px; font-size:12px; color:var(--text-secondary);
-  font-family:var(--font-mono);
-}
-.auth-footer a{color:var(--text-secondary)}
-.auth-footer a:hover{color:var(--text)}
-.footer-sep{opacity:0.4}
-
-/* Responsive */
 @media (max-width:480px){
   .header-inner{padding:0 16px}
   .wordmark-label{display:none}
-  .main{padding:24px 16px}
-  .auth-card{padding:20px; border-radius:14px}
+  .auth-card{padding:22px 18px 18px; border-radius:14px}
+  .title{font-size:20px}
 }
-  
+:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 </style>
-  </head>
+</head>
 <body>
-  <div class="bg-grid"></div>
-  
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="/" class="wordmark" aria-label="goodAPI Home">
-        <span class="wordmark-icon" aria-hidden="true">
-          <span class="pulse-dot"></span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8H3.5L5 3L8 13L9.5 5L11 8H14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-        <span class="wordmark-text">goodAPI</span>
-        <span class="wordmark-label">API MONITORING ENGINE</span>
-      </a>
-      <button id="header-switch-btn" class="header-switch" type="button">Create account</button>
-    </div>
-  </header>
+<div class="bg-grid" aria-hidden="true"></div>
 
-  <main class="main">
-    <div class="auth-wrapper">
-      <!-- Status / Connection -->
-      <div id="session-check" class="session-check" role="status" aria-live="polite">
-        <span class="session-dot"></span>
-        <span id="session-check-text">Verifying session...</span>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="wordmark" aria-label="goodAPI">
+      <div class="wordmark-icon" style="position:relative">
+        <span class="pulse" aria-hidden="true"></span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8H3.5L5 3L8 13L9.5 5L11 8H14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="wordmark-text">goodAPI</span>
+      <span class="wordmark-label">API MONITORING</span>
+    </div>
+    <div class="header-actions">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light theme">
+        <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9Z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="auth-wrapper">
+    <div id="session-box" class="session-box" role="status" aria-live="polite">
+      <span class="session-dot"></span>
+      <span id="session-text">Checking existing session...</span>
+    </div>
+
+    <div class="auth-card" id="auth-card">
+      <div class="card-head">
+        <h1 class="title">Welcome to goodAPI</h1>
+        <p class="subtitle">Test, inspect, and monitor your APIs.</p>
       </div>
 
-      <div class="auth-card" id="auth-card">
-        <div class="card-top">
-          <h1 id="form-title" class="form-title">Create account</h1>
-          <p id="form-subtitle" class="form-subtitle">Start monitoring your APIs in under 30 seconds.</p>
+      <div id="alert" class="alert" role="alert" aria-live="assertive"></div>
+
+      <div id="google-area" class="google-area">
+        <div id="gsi-wrapper" class="gsi-wrapper">
+          <!-- Google Identity Services button will render here -->
+          <div id="g_id_onload"
+               data-client_id="1010048791690-47mp6l28pi9g3h03va48kevpdngdv6n9.apps.googleusercontent.com"
+               data-context="signin"
+               data-ux_mode="popup"
+               data-callback="handleGoogleCredential"
+               data-auto_prompt="false">
+          </div>
+          <div class="g_id_signin"
+               data-type="standard"
+               data-shape="rectangular"
+               data-theme="outline"
+               data-text="continue_with"
+               data-size="large"
+               data-logo_alignment="left"
+               data-width="320">
+          </div>
         </div>
 
-        <div id="form-alert" class="form-alert" role="alert" aria-live="assertive" hidden></div>
+        <!-- Accessible fallback (shown if GSI fails to render) -->
+        <button id="fallback-google-btn" type="button" class="fallback-google" style="display:none" aria-label="Continue with Google">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C34 32 30 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c2.7 0 5.2.9 7.2 2.5l6-6C34 4.1 29.4 2 24 2 11.3 2 1 12.3 1 25s10.3 23 23 23c11.5 0 21.6-8.1 21.6-23 0-1.5-.2-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c2.7 0 5.2.9 7.2 2.5l6-6C34 4.1 29.4 2 24 2 16.3 2 9.7 6 6.3 14.7z"/><path fill="#4CAF50" d="M24 48c5.4 0 10.2-1.8 14-4.8l-6.5-5.4C29.7 39.1 27 40 24 40c-5 0-9.3-3-10.7-7.2l-6.6 5.1C10 44.4 16.5 48 24 48z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.8-2.9 5-5.8 6.8l6.5 5.4C39.8 36.9 44 31 44 24c0-1.5-.2-2.7-.4-3.5z"/></svg>
+          Continue with Google
+        </button>
 
-        <!-- CREATE ACCOUNT FORM -->
-        <form id="register-form" class="auth-form" novalidate autocomplete="on">
-          <div class="field">
-            <label for="reg-email" class="field-label">Email address</label>
-            <input id="reg-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@company.com" class="field-input" />
-            <span class="field-error" id="reg-email-error" aria-live="polite"></span>
-          </div>
-
-          <div class="field">
-            <label for="reg-password" class="field-label">Password</label>
-            <div class="input-with-action">
-              <input id="reg-password" name="password" type="password" autocomplete="new-password" required placeholder="••••••••••••" class="field-input" minlength="8" />
-              <button type="button" class="icon-btn visibility-toggle" aria-label="Show password" aria-controls="reg-password" data-target="reg-password">
-                <span class="eye-icon"></span>
-              </button>
-            </div>
-            <p class="field-hint">Minimum 8 characters. Use a mix of letters, numbers, and symbols.</p>
-            <span class="field-error" id="reg-password-error" aria-live="polite"></span>
-          </div>
-
-          <div class="field">
-            <label for="reg-confirm" class="field-label">Confirm password</label>
-            <div class="input-with-action">
-              <input id="reg-confirm" name="confirmPassword" type="password" autocomplete="new-password" required placeholder="••••••••••••" class="field-input" />
-              <button type="button" class="icon-btn visibility-toggle" aria-label="Show password" aria-controls="reg-confirm" data-target="reg-confirm">
-                <span class="eye-icon"></span>
-              </button>
-            </div>
-            <span class="field-error" id="reg-confirm-error" aria-live="polite"></span>
-          </div>
-
-          <button id="reg-submit" type="submit" class="btn btn-primary">
-            <span class="btn-text">Create account</span>
-            <span class="btn-loader" aria-hidden="true"></span>
-          </button>
-
-          <p class="form-switch-line">Already have an account? <button type="button" class="link-btn" data-switch-to="login">Log in</button></p>
-        </form>
-
-        <!-- LOGIN FORM -->
-        <form id="login-form" class="auth-form is-hidden" novalidate autocomplete="on">
-          <div class="field">
-            <label for="login-email" class="field-label">Email address</label>
-            <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@company.com" class="field-input" />
-            <span class="field-error" id="login-email-error" aria-live="polite"></span>
-          </div>
-
-          <div class="field">
-            <label for="login-password" class="field-label">Password</label>
-            <div class="input-with-action">
-              <input id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••••••" class="field-input" />
-              <button type="button" class="icon-btn visibility-toggle" aria-label="Show password" aria-controls="login-password" data-target="login-password">
-                <span class="eye-icon"></span>
-              </button>
-            </div>
-            <span class="field-error" id="login-password-error" aria-live="polite"></span>
-          </div>
-
-          <button id="login-submit" type="submit" class="btn btn-primary">
-            <span class="btn-text">Log in</span>
-            <span class="btn-loader" aria-hidden="true"></span>
-          </button>
-
-          <p class="form-switch-line">New to goodAPI? <button type="button" class="link-btn" data-switch-to="register">Create an account</button></p>
-        </form>
-
-        <div class="card-meta">
-          <span class="meta-dot"></span>
-          <span class="meta-text">Secure session • HTTP-only cookie • Encrypted transport</span>
+        <div id="google-loading" style="display:none; text-align:center; font-size:13px; color:var(--muted)">
+          <span class="loader"></span> Verifying with goodAPI...
         </div>
       </div>
 
-      <footer class="auth-footer">
-        <a href="/privacy">Privacy Policy</a>
-        <span class="footer-sep">·</span>
-        <a href="/terms">Terms</a>
-        <span class="footer-sep">·</span>
-        <span class="footer-copy">© 2026 goodAPI</span>
-      </footer>
+      <div class="divider" style="margin:16px 0 0"><span>One account</span></div>
+      <p class="support" style="margin:10px 0 0">One account for your API testing and monitoring workspace.</p>
+
+      <div class="card-footer"><span class="footer-dot"></span><span>Secure authentication · goodAPI</span></div>
     </div>
-  </main>
+  </div>
+</main>
 
-  <script>
-const DASHBOARD_URL = "dashboard.html";
-
-const state = {
-  mode: "register", // 'register' | 'login'
-  busy: false,
-};
-
-const els = {
-  sessionCheck: document.getElementById("session-check"),
-  sessionCheckText: document.getElementById("session-check-text"),
-  authCard: document.getElementById("auth-card"),
-  formTitle: document.getElementById("form-title"),
-  formSubtitle: document.getElementById("form-subtitle"),
-  formAlert: document.getElementById("form-alert"),
-  headerSwitchBtn: document.getElementById("header-switch-btn"),
-  registerForm: document.getElementById("register-form"),
-  loginForm: document.getElementById("login-form"),
-  regEmail: document.getElementById("reg-email"),
-  regPass: document.getElementById("reg-password"),
-  regConfirm: document.getElementById("reg-confirm"),
-  loginEmail: document.getElementById("login-email"),
-  loginPass: document.getElementById("login-password"),
-  regSubmit: document.getElementById("reg-submit"),
-  loginSubmit: document.getElementById("login-submit"),
-};
-
-// --- API helper ---
-async function apiRequest(path, { method = "GET", body } = {}) {
-  const headers = { "Content-Type": "application/json" };
-  const opts = {
-    method,
-    headers,
-    credentials: "include", // Critical: send/receive HTTP-only cookie
-  };
-  if (body) opts.body = JSON.stringify(body);
-
-  let res;
-  try {
-    res = await fetch(`${API_BASE_URL}${path}`, opts);
-  } catch (err) {
-    // Network / CORS / backend down
-    throw { type: "network", message: "Cannot reach API. Check that backend is running and CORS allows this origin." };
+<script>
+// --- Theme logic ---
+(function(){
+  const btn = document.getElementById("theme-toggle");
+  const icon = document.getElementById("theme-icon");
+  function getTheme(){ return document.documentElement.getAttribute("data-theme") || "dark"; }
+  function setIcon(theme){
+    const isDark = theme === "dark";
+    btn.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
+    // moon for dark, sun for light
+    icon.innerHTML = isDark
+      ? '<path d="M12 3a6 6 0 0 0 9 9c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9Z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
   }
-
-  let data = null;
-  const text = await res.text();
-  try { data = text ? JSON.parse(text) : null; } catch { data = { detail: text }; }
-
-  if (!res.ok) {
-    const detail = data?.detail || data?.message || `Request failed (${res.status})`;
-    const message = Array.isArray(detail) ? detail.map(d=>d.msg||d.message||JSON.stringify(d)).join(" • ") : typeof detail === "string" ? detail : JSON.stringify(detail);
-    throw { type: "api", status: res.status, message };
+  function setTheme(theme){
+    document.documentElement.setAttribute("data-theme", theme);
+    try{ localStorage.setItem("goodapi-theme", theme); }catch(e){}
+    setIcon(theme);
+    // Re-render Google button theme to match
+    try{ renderGoogleButton(); }catch(e){}
   }
-  return data;
-}
+  setIcon(getTheme());
+  btn.addEventListener("click", ()=>{ setTheme(getTheme()==="dark"?"light":"dark"); });
+  window.setTheme = setTheme;
+  window.getTheme = getTheme;
+})();
 
-// --- UI helpers ---
-function showAlert(message, type = "error") {
-  els.formAlert.textContent = message;
-  els.formAlert.dataset.type = type;
-  els.formAlert.hidden = false;
+// --- Auth logic ---
+const CLIENT_ID = "1010048791690-47mp6l28pi9g3h03va48kevpdngdv6n9.apps.googleusercontent.com";
+const alertEl = document.getElementById("alert");
+const googleArea = document.getElementById("google-area");
+const googleLoading = document.getElementById("google-loading");
+const gsiWrapper = document.getElementById("gsi-wrapper");
+const fallbackBtn = document.getElementById("fallback-google-btn");
+const sessionBox = document.getElementById("session-box");
+const sessionText = document.getElementById("session-text");
+
+function showAlert(msg, type="error"){
+  alertEl.textContent = msg;
+  alertEl.className = "alert show " + (type==="error"?"error":"info");
 }
-function hideAlert() {
-  els.formAlert.hidden = true;
-  els.formAlert.textContent = "";
+function hideAlert(){
+  alertEl.textContent = "";
+  alertEl.className = "alert";
 }
-function setBusy(form, isBusy) {
-  state.busy = isBusy;
-  const btn = form === "register" ? els.regSubmit : els.loginSubmit;
-  btn.disabled = isBusy;
-  btn.classList.toggle("is-loading", isBusy);
-  [...(form === "register" ? els.registerForm : els.loginForm).elements].forEach(el => {
-    if (el.tagName === "INPUT") el.readOnly = isBusy;
-  });
-}
-function setFieldError(input, errorEl, msg) {
-  if (msg) {
-    input.setAttribute("aria-invalid", "true");
-    errorEl.textContent = msg;
-  } else {
-    input.removeAttribute("aria-invalid");
-    errorEl.textContent = "";
-  }
-}
-function clearFieldErrors(form) {
-  const map = form === "register"
-    ? [[els.regEmail, "reg-email-error"], [els.regPass, "reg-password-error"], [els.regConfirm, "reg-confirm-error"]]
-    : [[els.loginEmail, "login-email-error"], [els.loginPass, "login-password-error"]];
-  map.forEach(([input, id]) => setFieldError(input, document.getElementById(id), ""));
+function setBusy(isBusy){
+  googleArea.classList.toggle("is-busy", isBusy);
+  googleLoading.style.display = isBusy ? "block" : "none";
+  fallbackBtn.disabled = isBusy;
+  const gsiBtn = document.querySelector(".g_id_signin iframe, #gsi-wrapper");
+  if(gsiBtn) gsiBtn.style.pointerEvents = isBusy ? "none" : "auto";
 }
 
-// --- Validation ---
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-function validateRegister() {
-  clearFieldErrors("register");
-  let ok = true;
-  const email = els.regEmail.value.trim();
-  const pass = els.regPass.value;
-  const confirm = els.regConfirm.value;
-
-  if (!email || !validateEmail(email)) {
-    setFieldError(els.regEmail, document.getElementById("reg-email-error"), "Enter a valid email address.");
-    ok = false;
-  }
-  if (!pass || pass.length < 8) {
-    setFieldError(els.regPass, document.getElementById("reg-password-error"), "Password must be at least 8 characters.");
-    ok = false;
-  }
-  if (pass !== confirm) {
-    setFieldError(els.regConfirm, document.getElementById("reg-confirm-error"), "Passwords do not match.");
-    ok = false;
-  }
-  return ok;
-}
-function validateLogin() {
-  clearFieldErrors("login");
-  let ok = true;
-  const email = els.loginEmail.value.trim();
-  const pass = els.loginPass.value;
-  if (!email || !validateEmail(email)) {
-    setFieldError(els.loginEmail, document.getElementById("login-email-error"), "Enter a valid email address.");
-    ok = false;
-  }
-  if (!pass) {
-    setFieldError(els.loginPass, document.getElementById("login-password-error"), "Enter your password.");
-    ok = false;
-  }
-  return ok;
-}
-
-// --- Mode switching ---
-function switchMode(to) {
-  if (state.busy) return;
-  state.mode = to;
-  hideAlert();
-  const isLogin = to === "login";
-  els.registerForm.classList.toggle("is-hidden", isLogin);
-  els.loginForm.classList.toggle("is-hidden", !isLogin);
-  els.formTitle.textContent = isLogin ? "Log in" : "Create account";
-  els.formSubtitle.textContent = isLogin ? "Welcome back. Check your endpoints." : "Start monitoring your APIs in under 30 seconds.";
-  els.headerSwitchBtn.textContent = isLogin ? "Create account" : "Log in";
-  // focus first input of active form
-  setTimeout(() => (isLogin ? els.loginEmail : els.regEmail).focus(), 60);
-}
-
-// --- Session verification on load ---
-async function verifySession() {
-  els.sessionCheck.classList.remove("is-hidden","is-success","is-error");
-  els.sessionCheckText.textContent = "Verifying session...";
-  try {
-    const user = await apiRequest("/auth/me");
-    // If succeeds, already authenticated
-    els.sessionCheck.classList.add("is-success");
-    els.sessionCheckText.textContent = `Authenticated as ${user.email || "user"} — redirecting...`;
-    setTimeout(() => { window.location.href = DASHBOARD_URL; }, 600);
-  } catch (err) {
-    if (err.status === 401) {
-      els.sessionCheck.classList.add("is-hidden");
-      // Show auth forms
-      els.authCard.style.display = "";
-    } else {
-      // Backend down or other error — do NOT redirect, show connection error
-      els.sessionCheck.classList.add("is-error");
-      els.sessionCheckText.textContent = "API unreachable";
-      showAlert(err.message || "Backend unavailable. Please try again later.", "error");
-      els.sessionCheck.classList.remove("is-hidden");
+function renderGoogleButton(){
+  try{
+    if(!window.google || !google.accounts || !google.accounts.id) return;
+    google.accounts.id.initialize({
+      client_id: CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      context: "signin",
+      ux_mode: "popup"
+    });
+    const theme = document.documentElement.getAttribute("data-theme");
+    const parent = document.getElementById("gsi-wrapper");
+    // Clear and re-render with correct theme
+    const existing = parent.querySelector(".g_id_signin");
+    if(existing){
+      // Update attributes to match Graphite Edge
+      existing.setAttribute("data-theme", theme === "dark" ? "filled_black" : "outline");
+      existing.setAttribute("data-text", "continue_with");
+      existing.setAttribute("data-shape", "rectangular");
+      existing.setAttribute("data-size", "large");
+      existing.setAttribute("data-width", "320");
     }
+    google.accounts.id.renderButton(
+      document.querySelector(".g_id_signin"),
+      {
+        theme: theme === "dark" ? "filled_black" : "outline",
+        size: "large",
+        shape: "rectangular",
+        text: "continue_with",
+        width: 320,
+        logo_alignment: "left"
+      }
+    );
+    // Hide fallback if GSI succeeded
+    setTimeout(()=>{
+      const hasIframe = parent.querySelector("iframe");
+      if(hasIframe) fallbackBtn.style.display="none";
+      else fallbackBtn.style.display="flex";
+    }, 600);
+  }catch(e){
+    fallbackBtn.style.display="flex";
   }
 }
 
-// --- Handlers ---
-els.registerForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+// Called by Google Identity Services
+async function handleGoogleCredential(response){
+  if(!response || !response.credential){
+    showAlert("Google sign-in failed. Please try again.", "error");
+    return;
+  }
   hideAlert();
-  if (!validateRegister() || state.busy) return;
-  setBusy("register", true);
-  try {
-    await apiRequest("/auth/register", {
+  setBusy(true);
+  try{
+    const res = await fetch(`${API_BASE_URL}/auth/google`, {
       method: "POST",
-      body: { email: els.regEmail.value.trim(), password: els.regPass.value }
+      headers: { "Content-Type": "application/json" },
+      credentials: "omit",
+      body: JSON.stringify({ credential: response.credential })
     });
-    showAlert("Account created. Redirecting to dashboard...", "success");
-    setTimeout(() => window.location.href = DASHBOARD_URL, 700);
-  } catch (err) {
-    let msg = err.message;
-    if (err.status === 409) msg = "An account with this email already exists. Try logging in.";
-    if (err.status === 422) msg = err.message.includes("password") ? err.message : "Check your email and password requirements.";
-    showAlert(msg, "error");
-  } finally {
-    setBusy("register", false);
+    const text = await res.text();
+    let data = null;
+    try{ data = text ? JSON.parse(text) : null; }catch{ data = { detail: text }; }
+    if(!res.ok){
+      const detail = data?.detail || data?.message || text || `Authentication failed (${res.status})`;
+      const msg = typeof detail === "string" ? detail : JSON.stringify(detail);
+      throw new Error(msg);
+    }
+    if(!data || !data.session_token){
+      throw new Error("Invalid server response. Missing session token.");
+    }
+    try{ sessionStorage.setItem("goodapi_token", data.session_token); }catch(e){}
+    showAlert("Authenticated. Redirecting...", "info");
+    alertEl.className = "alert show info";
+    setTimeout(()=>{ window.location.href = "dashboard.html"; }, 400);
+  }catch(err){
+    setBusy(false);
+    showAlert(err.message || "Authentication failed. Please try again.", "error");
+  }
+}
+window.handleGoogleCredential = handleGoogleCredential;
+
+// Fallback button triggers GSI prompt
+fallbackBtn.addEventListener("click", ()=>{
+  try{
+    if(window.google && google.accounts && google.accounts.id){
+      google.accounts.id.prompt();
+    }else{
+      showAlert("Google Sign-In is still loading. Please wait a moment.", "error");
+    }
+  }catch(e){
+    showAlert("Could not start Google Sign-In.", "error");
   }
 });
 
-els.loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  hideAlert();
-  if (!validateLogin() || state.busy) return;
-  setBusy("login", true);
-  try {
-    await apiRequest("/auth/login", {
-      method: "POST",
-      body: { email: els.loginEmail.value.trim(), password: els.loginPass.value }
-    });
-    showAlert("Logged in. Loading dashboard...", "success");
-    setTimeout(() => window.location.href = DASHBOARD_URL, 500);
-  } catch (err) {
-    let msg = err.message;
-    if (err.status === 401) msg = "Invalid email or password.";
-    showAlert(msg, "error");
-  } finally {
-    setBusy("login", false);
+// Session verification on load
+async function verifyExistingSession(){
+  let token = null;
+  try{ token = sessionStorage.getItem("goodapi_token"); }catch(e){}
+  if(!token){
+    sessionBox.classList.add("is-hidden");
+    return;
   }
-});
-
-// Switch links
-document.querySelectorAll("[data-switch-to]").forEach(btn => {
-  btn.addEventListener("click", () => switchMode(btn.dataset.switchTo));
-});
-els.headerSwitchBtn.addEventListener("click", () => switchMode(state.mode === "login" ? "register" : "login"));
-
-// Password visibility toggles
-document.querySelectorAll(".visibility-toggle").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const target = document.getElementById(btn.dataset.target);
-    const isPassword = target.type === "password";
-    target.type = isPassword ? "text" : "password";
-    btn.classList.toggle("is-showing", !isPassword);
-    btn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
-  });
-});
+  sessionText.textContent = "Verifying existing session...";
+  sessionBox.classList.remove("is-hidden");
+  try{
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${token}` },
+      credentials: "omit"
+    });
+    if(res.ok){
+      sessionText.textContent = "Session valid — redirecting...";
+      setTimeout(()=>{ window.location.href="dashboard.html"; }, 500);
+      return;
+    }
+    if(res.status === 401){
+      try{ sessionStorage.removeItem("goodapi_token"); }catch(e){}
+      sessionBox.classList.add("is-hidden");
+      return;
+    }
+    throw new Error(`Unexpected response ${res.status}`);
+  }catch(err){
+    // Network error — keep page, show graceful message but do not delete token
+    if(err.message && err.message.toLowerCase().includes("failed to fetch")){
+      sessionText.textContent = "Cannot reach API — check connection";
+      showAlert("Cannot reach goodAPI backend. Please check your connection and try again.", "error");
+      return;
+    }
+    // For other errors, if 401 already handled above, show generic
+    sessionBox.classList.add("is-hidden");
+  }
+}
 
 // Init
-(function init() {
-  // Hide card until session check completes
-  els.authCard.style.display = "none";
-  verifySession();
+(function init(){
+  verifyExistingSession();
+
+  // Render Google button when library loads
+  let tries = 0;
+  const iv = setInterval(()=>{
+    tries++;
+    if(window.google && window.google.accounts && window.google.accounts.id){
+      clearInterval(iv);
+      renderGoogleButton();
+    }
+    if(tries > 50){ clearInterval(iv); fallbackBtn.style.display="flex"; }
+  }, 100);
+
+  // Handle GSI script load event
+  window.addEventListener("load", renderGoogleButton);
 })();
-  </script>
+</script>
 </body>
 </html>
