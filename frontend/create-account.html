@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Healthy API — Authentication</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <script src="config.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Graphite Edge Design System */
+:root{
+  --bg:#0A0A0C;
+  --surface:#111114;
+  --elevated:#161619;
+  --text:#FFFFFF;
+  --text-secondary:#888888;
+  --border:#29292E;
+  --accent:#D4FF00;
+  --accent-hover:#E0FF4D;
+  --error:#FF3B30;
+  --error-bg:rgba(255,59,48,0.08);
+  --success:#D4FF00;
+  --radius:12px;
+  --radius-sm:8px;
+  --font-sans:"Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:"Geist Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-sans);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+a{color:var(--text-secondary); text-decoration:none}
+a:hover{color:var(--text)}
+button{font-family:inherit}
+
+.bg-grid{
+  position:fixed; inset:0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:32px 32px;
+  opacity:0.12;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
+  pointer-events:none;
+}
+
+/* Header */
+.site-header{
+  position:sticky; top:0; z-index:10;
+  border-bottom:1px solid var(--border);
+  background:rgba(10,10,12,0.8);
+  backdrop-filter:blur(12px);
+}
+.header-inner{
+  max-width:1120px; margin:0 auto;
+  height:56px; padding:0 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.wordmark{display:flex; align-items:center; gap:10px; color:var(--text)}
+.wordmark-icon{
+  width:28px; height:28px; border-radius:8px;
+  background:var(--elevated); border:1px solid var(--border);
+  display:inline-flex; align-items:center; justify-content:center;
+  position:relative; color:var(--text);
+}
+.pulse-dot{
+  position:absolute; top:7px; right:7px;
+  width:5px; height:5px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 0 0 var(--accent);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(212,255,0,0.5)}70%{box-shadow:0 0 0 6px rgba(212,255,0,0)}100%{box-shadow:0 0 0 0 rgba(212,255,0,0)}}
+.wordmark-text{font-weight:600; letter-spacing:-0.02em; font-size:14px}
+.wordmark-label{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em;
+  color:var(--text-secondary); border-left:1px solid var(--border);
+  padding-left:10px; margin-left:2px; font-weight:500;
+}
+.header-switch{
+  height:32px; padding:0 14px; border-radius:999px;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text); font-size:13px; font-weight:500;
+  transition:all 160ms ease;
+}
+.header-switch:hover{border-color:#3A3A40; background:var(--elevated)}
+
+/* Main */
+.main{display:flex; justify-content:center; padding:48px 20px 32px}
+.auth-wrapper{width:100%; max-width:400px}
+
+/* Session check */
+.session-check{
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.02em;
+  color:var(--text-secondary); background:var(--surface);
+  border:1px solid var(--border); border-radius:999px;
+  padding:6px 12px; width:fit-content; margin:0 auto 16px;
+  transition:opacity 200ms ease, transform 200ms ease;
+}
+.session-dot{width:6px; height:6px; border-radius:50%; background:var(--text-secondary)}
+.session-check.is-success .session-dot{background:var(--accent); box-shadow:0 0 8px var(--accent)}
+.session-check.is-error .session-dot{background:var(--error)}
+.session-check.is-hidden{opacity:0; transform:translateY(-4px); pointer-events:none}
+
+/* Card */
+.auth-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+}
+.auth-card::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+.card-top{margin-bottom:20px}
+.form-title{margin:0; font-size:20px; line-height:1.2; letter-spacing:-0.03em; font-weight:600}
+.form-subtitle{margin:8px 0 0; color:var(--text-secondary); font-size:13px; line-height:1.5}
+
+/* Alert */
+.form-alert{
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  padding:10px 12px;
+  font-size:13px; line-height:1.4;
+  margin-bottom:16px;
+  background:var(--elevated);
+}
+.form-alert[data-type="error"]{border-color:rgba(255,59,48,0.25); background:var(--error-bg); color:#FF8A82}
+.form-alert[data-type="success"]{border-color:rgba(212,255,0,0.25); background:rgba(212,255,0,0.07); color:var(--text)}
+.form-alert[data-type="info"]{color:var(--text-secondary)}
+
+/* Forms */
+.auth-form{display:grid; gap:16px; transition:opacity 180ms ease, transform 180ms ease}
+.auth-form.is-hidden{position:absolute; opacity:0; pointer-events:none; transform:translateY(6px)}
+@media (prefers-reduced-motion: reduce){ .auth-form{transition:none} }
+
+.field{display:grid; gap:6px}
+.field-label{
+  font-family:var(--font-mono); font-size:11px; font-weight:500;
+  letter-spacing:0.04em; text-transform:uppercase; color:var(--text-secondary);
+}
+.field-input{
+  width:100%; height:40px; padding:0 12px;
+  border-radius:var(--radius-sm); border:1px solid var(--border);
+  background:var(--bg); color:var(--text);
+  font-size:14px; outline:none; transition:border-color 150ms ease, box-shadow 150ms ease;
+}
+.field-input::placeholder{color:#55555E}
+.field-input:hover{border-color:#3A3A40}
+.field-input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(212,255,0,0.15)}
+.field-input[aria-invalid="true"]{border-color:var(--error); box-shadow:0 0 0 3px rgba(255,59,48,0.15)}
+
+.input-with-action{position:relative; display:flex; align-items:center}
+.input-with-action .field-input{padding-right:40px; flex:1}
+.icon-btn{
+  position:absolute; right:4px; width:32px; height:32px;
+  border-radius:6px; border:1px solid transparent; background:transparent;
+  display:grid; place-items:center; color:var(--text-secondary); cursor:pointer;
+  transition:all 150ms ease;
+}
+.icon-btn:hover{background:var(--elevated); color:var(--text); border-color:var(--border)}
+.icon-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.eye-icon{width:16px; height:16px; display:block; position:relative}
+.eye-icon::before{content:""; position:absolute; inset:2px 1px; border:1.2px solid currentColor; border-radius:10px 2px; transform:rotate(0deg)}
+.eye-icon::after{content:""; position:absolute; width:4px; height:4px; border-radius:50%; border:1.2px solid currentColor; left:50%; top:50%; transform:translate(-50%,-50%)}
+.icon-btn.is-showing .eye-icon::after{width:10px; height:1.2px; background:currentColor; border:0; border-radius:999px; transform:translate(-50%,-50%) rotate(-28deg)}
+
+.field-hint{margin:0; font-family:var(--font-mono); font-size:11px; color:#6A6A72; line-height:1.4}
+.field-error{min-height:16px; font-size:12px; color:var(--error); line-height:1.3}
+
+/* Buttons */
+.btn{
+  height:40px; border-radius:var(--radius-sm); border:1px solid var(--border);
+  font-size:14px; font-weight:500; letter-spacing:-0.01em;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  cursor:pointer; position:relative; overflow:hidden;
+  transition:all 160ms ease;
+}
+.btn-primary{background:var(--accent); color:#0A0A0C; border-color:var(--accent); font-weight:600}
+.btn-primary:hover{background:var(--accent-hover); border-color:var(--accent-hover)}
+.btn-primary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn:disabled{opacity:0.6; cursor:not-allowed}
+.btn-loader{width:14px; height:14px; border-radius:50%; border:2px solid rgba(10,10,12,0.2); border-top-color:#0A0A0C; display:none; animation:spin 600ms linear infinite}
+.btn.is-loading .btn-loader{display:block}
+.btn.is-loading .btn-text{opacity:0.85}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.form-switch-line{margin:2px 0 0; text-align:center; font-size:13px; color:var(--text-secondary)}
+.link-btn{
+  background:none; border:0; padding:0; color:var(--text); text-decoration:underline;
+  text-underline-offset:3px; cursor:pointer; font-size:13px;
+}
+.link-btn:hover{color:var(--accent)}
+
+.card-meta{
+  margin-top:18px; padding-top:14px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:0.04em; color:#6A6A72;
+}
+.meta-dot{width:4px; height:4px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px rgba(212,255,0,0.5)}
+
+.auth-footer{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  margin-top:18px; font-size:12px; color:var(--text-secondary);
+  font-family:var(--font-mono);
+}
+.auth-footer a{color:var(--text-secondary)}
+.auth-footer a:hover{color:var(--text)}
+.footer-sep{opacity:0.4}
+
+/* Responsive */
+@media (max-width:480px){
+  .header-inner{padding:0 16px}
+  .wordmark-label{display:none}
+  .main{padding:24px 16px}
+  .auth-card{padding:20px; border-radius:14px}
+}
+  
+</style>
+  </head>
+<body>
+  <div class="bg-grid"></div>
+  
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="wordmark" aria-label="Healthy API Home">
+        <span class="wordmark-icon" aria-hidden="true">
+          <span class="pulse-dot"></span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8H3.5L5 3L8 13L9.5 5L11 8H14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="wordmark-text">Healthy API</span>
+        <span class="wordmark-label">API MONITORING ENGINE</span>
+      </a>
+      <button id="header-switch-btn" class="header-switch" type="button">Create account</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="auth-wrapper">
+      <!-- Status / Connection -->
+      <div id="session-check" class="session-check" role="status" aria-live="polite">
+        <span class="session-dot"></span>
+        <span id="session-check-text">Verifying session...</span>
+      </div>
+
+      <div class="auth-card" id="auth-card">
+        <div class="card-top">
+          <h1 id="form-title" class="form-title">Create account</h1>
+          <p id="form-subtitle" class="form-subtitle">Start monitoring your APIs in under 30 seconds.</p>
+        </div>
+
+        <div id="form-alert" class="form-alert" role="alert" aria-live="assertive" hidden></div>
+
+        <!-- CREATE ACCOUNT FORM -->
+        <form id="register-form" class="auth-form" novalidate autocomplete="on">
+          <div class="field">
+            <label for="reg-email" class="field-label">Email address</label>
+            <input id="reg-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@company.com" class="field-input" />
+            <span class="field-error" id="reg-email-error" aria-live="polite"></span>
+          </div>
+
+          <div class="field">
+            <label for="reg-password" class="field-label">Password</label>
+            <div class="input-with-action">
+              <input id="reg-password" name="password" type="password" autocomplete="new-password" required placeholder="••••••••••••" class="field-input" minlength="8" />
+              <button type="button" class="icon-btn visibility-toggle" aria-label="Show password" aria-controls="reg-password" data-target="reg-password">
+                <span class="eye-icon"></span>
+              </button>
+            </div>
+            <p class="field-hint">Minimum 8 characters. Use a mix of letters, numbers, and symbols.</p>
+            <span class="field-error" id="reg-password-error" aria-live="polite"></span>
+          </div>
+
+          <div class="field">
+            <label for="reg-confirm" class="field-label">Confirm password</label>
+            <div class="input-with-action">
+              <input id="reg-confirm" name="confirmPassword" type="password" autocomplete="new-password" required placeholder="••••••••••••" class="field-input" />
+              <button type="button" class="icon-btn visibility-toggle" aria-label="Show password" aria-controls="reg-confirm" data-target="reg-confirm">
+                <span class="eye-icon"></span>
+              </button>
+            </div>
+            <span class="field-error" id="reg-confirm-error" aria-live="polite"></span>
+          </div>
+
+          <button id="reg-submit" type="submit" class="btn btn-primary">
+            <span class="btn-text">Create account</span>
+            <span class="btn-loader" aria-hidden="true"></span>
+          </button>
+
+          <p class="form-switch-line">Already have an account? <button type="button" class="link-btn" data-switch-to="login">Log in</button></p>
+        </form>
+
+        <!-- LOGIN FORM -->
+        <form id="login-form" class="auth-form is-hidden" novalidate autocomplete="on">
+          <div class="field">
+            <label for="login-email" class="field-label">Email address</label>
+            <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@company.com" class="field-input" />
+            <span class="field-error" id="login-email-error" aria-live="polite"></span>
+          </div>
+
+          <div class="field">
+            <label for="login-password" class="field-label">Password</label>
+            <div class="input-with-action">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••••••" class="field-input" />
+              <button type="button" class="icon-btn visibility-toggle" aria-label="Show password" aria-controls="login-password" data-target="login-password">
+                <span class="eye-icon"></span>
+              </button>
+            </div>
+            <span class="field-error" id="login-password-error" aria-live="polite"></span>
+          </div>
+
+          <button id="login-submit" type="submit" class="btn btn-primary">
+            <span class="btn-text">Log in</span>
+            <span class="btn-loader" aria-hidden="true"></span>
+          </button>
+
+          <p class="form-switch-line">New to Healthy API? <button type="button" class="link-btn" data-switch-to="register">Create an account</button></p>
+        </form>
+
+        <div class="card-meta">
+          <span class="meta-dot"></span>
+          <span class="meta-text">Secure session • HTTP-only cookie • Encrypted transport</span>
+        </div>
+      </div>
+
+      <footer class="auth-footer">
+        <a href="/privacy">Privacy Policy</a>
+        <span class="footer-sep">·</span>
+        <a href="/terms">Terms</a>
+        <span class="footer-sep">·</span>
+        <span class="footer-copy">© 2026 Healthy API</span>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+const DASHBOARD_URL = "dashboard.html";
+
+const state = {
+  mode: "register", // 'register' | 'login'
+  busy: false,
+};
+
+const els = {
+  sessionCheck: document.getElementById("session-check"),
+  sessionCheckText: document.getElementById("session-check-text"),
+  authCard: document.getElementById("auth-card"),
+  formTitle: document.getElementById("form-title"),
+  formSubtitle: document.getElementById("form-subtitle"),
+  formAlert: document.getElementById("form-alert"),
+  headerSwitchBtn: document.getElementById("header-switch-btn"),
+  registerForm: document.getElementById("register-form"),
+  loginForm: document.getElementById("login-form"),
+  regEmail: document.getElementById("reg-email"),
+  regPass: document.getElementById("reg-password"),
+  regConfirm: document.getElementById("reg-confirm"),
+  loginEmail: document.getElementById("login-email"),
+  loginPass: document.getElementById("login-password"),
+  regSubmit: document.getElementById("reg-submit"),
+  loginSubmit: document.getElementById("login-submit"),
+};
+
+// --- API helper ---
+async function apiRequest(path, { method = "GET", body } = {}) {
+  const headers = { "Content-Type": "application/json" };
+  const opts = {
+    method,
+    headers,
+    credentials: "include", // Critical: send/receive HTTP-only cookie
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, opts);
+  } catch (err) {
+    // Network / CORS / backend down
+    throw { type: "network", message: "Cannot reach API. Check that backend is running and CORS allows this origin." };
+  }
+
+  let data = null;
+  const text = await res.text();
+  try { data = text ? JSON.parse(text) : null; } catch { data = { detail: text }; }
+
+  if (!res.ok) {
+    const detail = data?.detail || data?.message || `Request failed (${res.status})`;
+    const message = Array.isArray(detail) ? detail.map(d=>d.msg||d.message||JSON.stringify(d)).join(" • ") : typeof detail === "string" ? detail : JSON.stringify(detail);
+    throw { type: "api", status: res.status, message };
+  }
+  return data;
+}
+
+// --- UI helpers ---
+function showAlert(message, type = "error") {
+  els.formAlert.textContent = message;
+  els.formAlert.dataset.type = type;
+  els.formAlert.hidden = false;
+}
+function hideAlert() {
+  els.formAlert.hidden = true;
+  els.formAlert.textContent = "";
+}
+function setBusy(form, isBusy) {
+  state.busy = isBusy;
+  const btn = form === "register" ? els.regSubmit : els.loginSubmit;
+  btn.disabled = isBusy;
+  btn.classList.toggle("is-loading", isBusy);
+  [...(form === "register" ? els.registerForm : els.loginForm).elements].forEach(el => {
+    if (el.tagName === "INPUT") el.readOnly = isBusy;
+  });
+}
+function setFieldError(input, errorEl, msg) {
+  if (msg) {
+    input.setAttribute("aria-invalid", "true");
+    errorEl.textContent = msg;
+  } else {
+    input.removeAttribute("aria-invalid");
+    errorEl.textContent = "";
+  }
+}
+function clearFieldErrors(form) {
+  const map = form === "register"
+    ? [[els.regEmail, "reg-email-error"], [els.regPass, "reg-password-error"], [els.regConfirm, "reg-confirm-error"]]
+    : [[els.loginEmail, "login-email-error"], [els.loginPass, "login-password-error"]];
+  map.forEach(([input, id]) => setFieldError(input, document.getElementById(id), ""));
+}
+
+// --- Validation ---
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+function validateRegister() {
+  clearFieldErrors("register");
+  let ok = true;
+  const email = els.regEmail.value.trim();
+  const pass = els.regPass.value;
+  const confirm = els.regConfirm.value;
+
+  if (!email || !validateEmail(email)) {
+    setFieldError(els.regEmail, document.getElementById("reg-email-error"), "Enter a valid email address.");
+    ok = false;
+  }
+  if (!pass || pass.length < 8) {
+    setFieldError(els.regPass, document.getElementById("reg-password-error"), "Password must be at least 8 characters.");
+    ok = false;
+  }
+  if (pass !== confirm) {
+    setFieldError(els.regConfirm, document.getElementById("reg-confirm-error"), "Passwords do not match.");
+    ok = false;
+  }
+  return ok;
+}
+function validateLogin() {
+  clearFieldErrors("login");
+  let ok = true;
+  const email = els.loginEmail.value.trim();
+  const pass = els.loginPass.value;
+  if (!email || !validateEmail(email)) {
+    setFieldError(els.loginEmail, document.getElementById("login-email-error"), "Enter a valid email address.");
+    ok = false;
+  }
+  if (!pass) {
+    setFieldError(els.loginPass, document.getElementById("login-password-error"), "Enter your password.");
+    ok = false;
+  }
+  return ok;
+}
+
+// --- Mode switching ---
+function switchMode(to) {
+  if (state.busy) return;
+  state.mode = to;
+  hideAlert();
+  const isLogin = to === "login";
+  els.registerForm.classList.toggle("is-hidden", isLogin);
+  els.loginForm.classList.toggle("is-hidden", !isLogin);
+  els.formTitle.textContent = isLogin ? "Log in" : "Create account";
+  els.formSubtitle.textContent = isLogin ? "Welcome back. Check your endpoints." : "Start monitoring your APIs in under 30 seconds.";
+  els.headerSwitchBtn.textContent = isLogin ? "Create account" : "Log in";
+  // focus first input of active form
+  setTimeout(() => (isLogin ? els.loginEmail : els.regEmail).focus(), 60);
+}
+
+// --- Session verification on load ---
+async function verifySession() {
+  els.sessionCheck.classList.remove("is-hidden","is-success","is-error");
+  els.sessionCheckText.textContent = "Verifying session...";
+  try {
+    const user = await apiRequest("/auth/me");
+    // If succeeds, already authenticated
+    els.sessionCheck.classList.add("is-success");
+    els.sessionCheckText.textContent = `Authenticated as ${user.email || "user"} — redirecting...`;
+    setTimeout(() => { window.location.href = DASHBOARD_URL; }, 600);
+  } catch (err) {
+    if (err.status === 401) {
+      els.sessionCheck.classList.add("is-hidden");
+      // Show auth forms
+      els.authCard.style.display = "";
+    } else {
+      // Backend down or other error — do NOT redirect, show connection error
+      els.sessionCheck.classList.add("is-error");
+      els.sessionCheckText.textContent = "API unreachable";
+      showAlert(err.message || "Backend unavailable. Please try again later.", "error");
+      els.sessionCheck.classList.remove("is-hidden");
+    }
+  }
+}
+
+// --- Handlers ---
+els.registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideAlert();
+  if (!validateRegister() || state.busy) return;
+  setBusy("register", true);
+  try {
+    await apiRequest("/auth/register", {
+      method: "POST",
+      body: { email: els.regEmail.value.trim(), password: els.regPass.value }
+    });
+    showAlert("Account created. Redirecting to dashboard...", "success");
+    setTimeout(() => window.location.href = DASHBOARD_URL, 700);
+  } catch (err) {
+    let msg = err.message;
+    if (err.status === 409) msg = "An account with this email already exists. Try logging in.";
+    if (err.status === 422) msg = err.message.includes("password") ? err.message : "Check your email and password requirements.";
+    showAlert(msg, "error");
+  } finally {
+    setBusy("register", false);
+  }
+});
+
+els.loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideAlert();
+  if (!validateLogin() || state.busy) return;
+  setBusy("login", true);
+  try {
+    await apiRequest("/auth/login", {
+      method: "POST",
+      body: { email: els.loginEmail.value.trim(), password: els.loginPass.value }
+    });
+    showAlert("Logged in. Loading dashboard...", "success");
+    setTimeout(() => window.location.href = DASHBOARD_URL, 500);
+  } catch (err) {
+    let msg = err.message;
+    if (err.status === 401) msg = "Invalid email or password.";
+    showAlert(msg, "error");
+  } finally {
+    setBusy("login", false);
+  }
+});
+
+// Switch links
+document.querySelectorAll("[data-switch-to]").forEach(btn => {
+  btn.addEventListener("click", () => switchMode(btn.dataset.switchTo));
+});
+els.headerSwitchBtn.addEventListener("click", () => switchMode(state.mode === "login" ? "register" : "login"));
+
+// Password visibility toggles
+document.querySelectorAll(".visibility-toggle").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = document.getElementById(btn.dataset.target);
+    const isPassword = target.type === "password";
+    target.type = isPassword ? "text" : "password";
+    btn.classList.toggle("is-showing", !isPassword);
+    btn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+  });
+});
+
+// Init
+(function init() {
+  // Hide card until session check completes
+  els.authCard.style.display = "none";
+  verifySession();
+})();
+  </script>
+</body>
+</html>
