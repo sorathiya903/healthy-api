@@ -394,7 +394,10 @@ def google_login(payload: dict[str, str], response: Response):
         "session_token": session_token,
     }
 
-
+@app.get("/auth/me")
+def get_me(request: Request):
+    user = current_user(request)
+    return {"user": public_user(user)}
 
 @app.post("/tests/live")
 async def run_live_test(
