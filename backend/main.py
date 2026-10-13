@@ -7,7 +7,8 @@ import ipaddress
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 from typing import Any
-
+import asyncio
+from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -125,14 +126,102 @@ def public_user(user: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(
-        key=COOKIE_NAME,
-        path="/",
-        httponly=True,
-        secure=True,
-        samesite="none",
+
+# ---------------------------------------------------------------------------
+# Automatic monitor scheduler
+# ---------------------------------------------------------------------------
+
+async def check_worker(worker: dict[str, Any]) -> None:
+    worker_id = worker["_id"]
+    owner_id = worker["owner_id"]
+
+    try:
+        result = await live_test(worker["url"], "GET")
+
+        expected_status = worker["expected_status"]
+        healthy = result.get("status_code") == expected_status
+
+        result["expected_status"] = expected_status
+        result["healthy"] = healthy
+        result["ok"] = healthy
+
+    except Exception:
+        # Do not expose internal exceptions in the dashboard.
+        result = {
+            "ok": False,
+            "healthy": False,
+            "status_code": None,
+            "latency_ms": None,
+            "expected_status": worker["expected_status"],
+            "error": "The monitor check could not be completed.",
+            "checked_at": utc_now().isoformat(),
+        }
+
+    # Save the result and update the latest monitor status.
+    workers.update_one(
+        {
+            "_id": worker_id,
+            "owner_id": owner_id,
+            "enabled": True,
+        },
+        {"$set": {"last_test": result}},
     )
+
+    # Keep history only for a monitor that still exists.
+    if workers.find_one(
+        {"_id": worker_id, "owner_id": owner_id, "enabled": True},
+        {"_id": 1},
+    ):
+        probe_results.insert_one({
+            "worker_id": worker_id,
+            "owner_id": owner_id,
+            **result,
+        })
+
+
+async def monitoring_loop() -> None:
+    print("Automatic monitor scheduler started.")
+
+    while True:
+        try:
+            now = utc_now()
+
+            # Find monitors whose next check is due.
+            due_workers = list(
+                workers.find({
+                    "enabled": True,
+                    "next_check_at": {"$lte": now},
+                }).limit(50)
+            )
+
+            for worker in due_workers:
+                # Claim the monitor before checking it. This helps prevent
+                # duplicate checks if multiple backend instances are running.
+                next_check = utc_now() + timedelta(
+                    seconds=worker["interval_seconds"]
+                )
+
+                claimed = workers.update_one(
+                    {
+                        "_id": worker["_id"],
+                        "enabled": True,
+                        "next_check_at": {"$lte": utc_now()},
+                    },
+                    {"$set": {"next_check_at": next_check}},
+                )
+
+                if claimed.modified_count == 0:
+                    continue
+
+                await check_worker(worker)
+
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            # Log scheduler failures on the server, not to API users.
+            print(f"Monitoring scheduler error: {type(exc).__name__}")
+
+        await asyncio.sleep(1)
 
 
 def set_session_cookie(response: Response, user_id: ObjectId) -> None:
@@ -546,3 +635,30 @@ def worker_history(
             else item.get("checked_at"),
         })
     return {"history": records}
+
+
+
+
+# ---------------------------------------------------------------------------
+# Scheduler lifecycle
+# ---------------------------------------------------------------------------
+
+@app.on_event("startup")
+async def start_monitoring_scheduler():
+    app.state.monitoring_task = asyncio.create_task(
+        monitoring_loop()
+    )
+
+
+@app.on_event("shutdown")
+async def stop_monitoring_scheduler():
+    task = getattr(app.state, "monitoring_task", None)
+
+    if task:
+        task.cancel()
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
