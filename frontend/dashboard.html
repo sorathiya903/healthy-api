@@ -366,6 +366,8 @@ tr:last-child td{border-bottom:0}
 <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
 <script>
+  const $$ = (selector, root = document) =>
+  Array.from(root.querySelectorAll(selector));
 // --- Helpers ---
 const $ = (s,r=document)=>r.querySelector(s);
 function safe(t){ return t==null? "" : String(t); }
