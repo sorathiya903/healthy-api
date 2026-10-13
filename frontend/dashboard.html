@@ -676,8 +676,29 @@ $("#create-form").addEventListener("submit", async(e)=>{
     const worker = res.worker || res;
     closeCreate(); showToast("Monitor created — initial test stored","ok");
     await loadMonitors();
-    // Show last_test if present
-    if(worker.last_test){ showToast(`Initial test: ${worker.last_test.status_code || ""} ${worker.last_test.is_healthy? "healthy" : "failed"}`, worker.last_test.is_healthy? "ok":"err"); }
+ 
+const test = worker.last_test || worker.latest_test || worker.last_check;
+
+if (test) {
+  const status = test.status_code ?? test.http_code ?? test.status;
+  const healthy = test.is_healthy ?? test.healthy ?? test.ok;
+
+  if (healthy === true) {
+    showToast(`Initial test: ${status ?? "Test passed"} — healthy`, "ok");
+  } else if (healthy === false) {
+    showToast(
+      `Initial test: ${status ?? "No HTTP status"} — failed`,
+      "err"
+    );
+  } else {
+    showToast(
+      `Monitor created. Initial test result is unavailable.`,
+      "ok"
+    );
+  }
+}
+
+  
   }catch(err){
     const alert=$("#create-alert");
     if(err.status===429) alert.textContent="Limit reached: maximum 100 monitors per user.";
