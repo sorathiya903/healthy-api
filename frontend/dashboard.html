@@ -228,7 +228,7 @@ tr:last-child td{border-bottom:0}
     </div>
     <nav class="nav" aria-label="Main">
       <div class="nav-item active" data-page="overview" role="button" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg> Overview</div>
-      <div class="nav-item" data-page="tester" role="button" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Live API Tester</div>
+      <div class="nav-item" id="nav-live-test" data-page="tester" role="button" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Live API Tester</div>
       <div class="nav-item" data-page="monitors" role="button" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="7" cy="6" r="1" fill="currentColor"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="7" cy="18" r="1" fill="currentColor"/></svg> Monitors</div>
     </nav>
     <div style="padding:10px; border-top:1px solid var(--border); display:grid; gap:8px">
@@ -247,14 +247,6 @@ tr:last-child td{border-bottom:0}
           <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3a6 6 0 0 0 9 9c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9Z"/></svg>
         </button>
         
-<button id="nav-live-test" class="btn btn-primary btn-sm" type="button">
-  <svg width="14" height="14" viewBox="0 0 24 24"
-       fill="none" stroke="currentColor" stroke-width="1.8"
-       aria-hidden="true">
-    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-  </svg>
-  Live test
-</button>
 
         <div class="account-menu" id="account-menu">
           <button id="account-btn" class="account-btn" type="button" aria-haspopup="true" aria-expanded="false"><div class="avatar" id="avatar">U</div><span id="account-email" class="mono" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">—</span></button>
