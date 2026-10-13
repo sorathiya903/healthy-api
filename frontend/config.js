@@ -5,7 +5,7 @@ const isDebug = true;
 if (isDebug) {
     // 2. Create the script element
     const script = document.createElement('script');
-    script.src = "https://jsdelivr.net/eruda";
+    script.src = "https://cdn.jsdelivr.net/npm/eruda"
     script.async = true;
 
     // 3. Initialize Eruda once the script has successfully finished loading
