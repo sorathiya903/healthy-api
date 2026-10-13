@@ -27,7 +27,7 @@ MONGODB_URI = os.getenv("MONGODB_URI", "").strip()
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "healthy_api").strip()
 SESSION_SECRET = os.getenv("SESSION_SECRET", "").strip()
 FRONTEND_ORIGINS = [
-    "https://healthyapi.netlify.app"
+    "https://goodapi.netlify.app"
 ]
 COOKIE_NAME = "healthy_api_session"
 SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
@@ -44,8 +44,7 @@ if len(SESSION_SECRET) < 32:
 
 app = FastAPI(
     title="Healthy API",
-    description="API testing and monitoring backend",
-    version="0.1.0",
+    description="API testing and monitoring backend"
 )
 
 app.add_middleware(
