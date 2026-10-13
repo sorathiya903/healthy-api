@@ -832,8 +832,26 @@ $("#nav-live-test").addEventListener("click", () => {
   $("#test-url").focus();
 });
 
-  document.getElementById("test-clear").addEventListener("click",()=>{document.getElementById("page-tester").style.display="none"})
   
+$("#test-clear").addEventListener("click", () => {
+  // Clear the tester form
+  $("#tester-form").reset();
+
+  // Clear validation errors and previous results
+  $("#test-url-err").textContent = "";
+  $("#tester-result").style.display = "none";
+  $("#tester-kv").innerHTML = "";
+  $("#tester-error").style.display = "none";
+  $("#tester-error").textContent = "";
+  $("#tester-body").textContent = "—";
+  $("#tester-badge").textContent = "—";
+  $("#tester-badge").className = "badge neutral";
+  $("#tester-status").textContent = "";
+
+  // Return to the default Overview page
+  switchPage("overview");
+});
+
 </script>
 </body>
 </html>
