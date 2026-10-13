@@ -777,12 +777,19 @@ $("#tester-form").addEventListener("submit", async(e)=>{
     $("#tester-status").textContent = `${res.status_code||"—"} • ${res.latency_ms||res.latency||"—"}ms`;
 
     const kv=$("#tester-kv"); kv.innerHTML="";
-    const pairs=[
-      ["Final URL", res.final_url || res.url || "—"],
-      ["Content-Type", res.content_type || res.contentType || "—"],
-      ["Latency", `${res.latency_ms||res.latency||"—"}ms`],
-      ["Status", String(res.status_code||"—")],
-    ];
+    
+const pairs = [
+  ["Request URL", $("#test-url").value.trim()],
+  ["Method", $("#test-method").value],
+  ["Final URL", res.final_url || res.url || "—"],
+  ["HTTP Status", String(res.status_code ?? res.status ?? "—")],
+  ["Latency", `${res.latency_ms ?? res.latency ?? "—"} ms`],
+  ["Content-Type", res.content_type || res.contentType || "—"],
+  ["Server", res.server || res.server_header || "Not provided"],
+  ["Redirected", res.redirected == null ? "Not provided" : String(res.redirected)],
+  ["Tested At", new Date().toLocaleString()],
+];
+
     pairs.forEach(([k,v])=>{ const div=document.createElement("div"); const s1=document.createElement("span"); s1.textContent=k; const s2=document.createElement("span"); s2.textContent=v; s2.style.wordBreak="break-all"; div.appendChild(s1); div.appendChild(s2); kv.appendChild(div); });
 
     const errEl=$("#tester-error");
