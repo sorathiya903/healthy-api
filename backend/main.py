@@ -55,7 +55,13 @@ app.add_middleware(
     allow_origins=FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_headers=[
+
+        "Content-Type",
+
+        "Authorization",
+
+    ]
 )
 
 mongo_client = MongoClient(
