@@ -425,7 +425,7 @@ async function loadUser(){
     return true;
   }catch(err){
     if(err.status===401){
-      window.location.href="login.html";
+      window.location.href="create-account.html";
       return false;
     }
     throw err;
