@@ -10,7 +10,7 @@ from typing import Any
 import asyncio
 from contextlib import asynccontextmanager
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import FastAPI,Depends, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field, HttpUrl, ConfigDict
 from pymongo import MongoClient, ASCENDING, DESCENDING
