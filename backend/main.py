@@ -114,6 +114,48 @@ class LiveTestRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+
+
+async def send_alert_email(
+    to_email: str,
+    subject: str,
+    html_content: str,
+) -> bool:
+    api_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("BREVO_SENDER_EMAIL")
+    sender_name = os.getenv("BREVO_SENDER_NAME", "goodAPI Alerts")
+
+    if not api_key or not sender_email:
+        raise RuntimeError("Brevo email configuration is missing.")
+
+    payload = {
+        "sender": {
+            "name": sender_name,
+            "email": sender_email,
+        },
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_content,
+    }
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.post(
+            BREVO_API_URL,
+            headers={
+                "api-key": api_key,
+                "accept": "application/json",
+                "content-type": "application/json",
+            },
+            json=payload,
+        )
+
+    if not response.is_success:
+        raise RuntimeError(
+            f"Brevo rejected the email: HTTP {response.status_code}"
+        )
+
+    return True
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -401,6 +443,47 @@ def serialize_worker(worker: dict[str, Any]) -> dict[str, Any]:
         "created_at": worker["created_at"].isoformat(),
         "last_test": worker.get("last_test"),
     }
+
+
+
+class TestEmailRequest(BaseModel):
+    email: EmailStr
+
+
+@app.post("/test-email")
+async def test_email(data: TestEmailRequest):
+    try:
+        await send_alert_email(
+            to_email=str(data.email),
+            subject="Test Alert — goodAPI",
+            html_content="""
+            <div style="font-family:Arial,sans-serif;
+                        max-width:560px;margin:auto;color:#202124;">
+                <h2 style="color:#2563eb;">goodAPI Alerts</h2>
+                <p>This is a test email from goodAPI.</p>
+                <p>Your email notification configuration is working
+                   if you received this message.</p>
+                <hr style="border:0;border-top:1px solid #ddd;">
+                <p style="color:#777;font-size:12px;">
+                    This is a test notification. No API outage was detected.
+                </p>
+            </div>
+            """,
+        )
+        return {
+            "success": True,
+            "message": "Brevo accepted the test email request.",
+        }
+
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not connect to the email service.",
+        )
+
+
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health():
