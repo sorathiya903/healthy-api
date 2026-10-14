@@ -570,10 +570,14 @@ def google_login(payload: dict[str, str], response: Response):
     }
 
 @app.get("/auth/me")
-def get_me(request: Request):
-    user = current_user(request)
-    return {"user": public_user(user)}
-
+def auth_me(
+    user: dict[str, Any] = Depends(current_user),
+):
+    return {
+        "id": str(user["_id"]),
+        "email": user.get("email"),
+        "name": user.get("name"),
+    }
 @app.post("/tests/live")
 async def run_live_test(
     payload: LiveTestRequest,
