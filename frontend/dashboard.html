@@ -370,6 +370,45 @@ tr:last-child td{border-bottom:0}
 <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
 <script>
+  
+function formatRelativeTime(timestamp) {
+    if (!timestamp) return "Unknown";
+
+    // MongoDB/Python timestamps may arrive as ISO strings.
+    const createdAt = new Date(timestamp);
+    if (Number.isNaN(createdAt.getTime())) return "Unknown";
+
+    const seconds = Math.max(
+        0,
+        Math.floor((Date.now() - createdAt.getTime()) / 1000)
+    );
+
+    if (seconds < 60) return "Just now";
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+        return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+
+    const days = Math.floor(hours / 24);
+    if (days < 30) {
+        return `${days} day${days === 1 ? "" : "s"} ago`;
+    }
+
+    const months = Math.floor(days / 30);
+    if (months < 12) {
+        return `${months} month${months === 1 ? "" : "s"} ago`;
+    }
+
+    const years = Math.floor(days / 365);
+    return `${years} year${years === 1 ? "" : "s"} ago`;
+}
+
   const $$ = (selector, root = document) =>
   Array.from(root.querySelectorAll(selector));
 // --- Helpers ---
@@ -557,7 +596,7 @@ function renderTables(){
     const url = w.url || "";
     const expected = w.expected_status?? w.expected_http_status?? "—";
     const interval = w.interval_seconds?? w.interval?? "—";
-    const created = w.created_at || w.createdAt || "";
+    const created = formatRelativeTime(w.created_at)
     const health = getHealth(w);
     const badgeClass = health.state==="healthy"? "ok" : health.state==="failed"? "bad" : "neutral";
     const badgeText = health.state==="healthy"? "Healthy" : health.state==="failed"? "Failed" : "Unknown";
