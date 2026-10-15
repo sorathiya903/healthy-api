@@ -325,38 +325,8 @@ async def check_worker(worker: dict[str, Any]) -> None:
           {    "_id": worker_id,    "owner_id": owner_id,  "enabled": True,       },
         {"$set": update_fields},)
 
-    new_state = "up" if healthy else "down"
-    alert_event = None
-    down_since = latest.get("down_since")
 
-    # UP -> DOWN: record the outage and prepare one alert.
-    if previous_state == "up" and new_state == "down":
-        alert_event = "down"
-        down_since = now
 
-    # DOWN -> UP: calculate downtime and prepare recovery alert.
-    elif previous_state == "down" and new_state == "up":
-        alert_event = "up"
-
-    update_fields = {"last_test": result}
-
-    if new_state != previous_state:
-        update_fields["status_was"] = new_state
-        update_fields["last_state_change_at"] = now
-
-        if new_state == "down":
-            update_fields["down_since"] = now
-        else:
-            update_fields["down_since"] = None
-
-    workers.update_one(
-        {
-            "_id": worker_id,
-            "owner_id": owner_id,
-            "enabled": True,
-        },
-        {"$set": update_fields},
-    )
 
     # Save this test to history.
     probe_results.insert_one({
@@ -392,11 +362,10 @@ async def check_worker(worker: dict[str, Any]) -> None:
                     result=result,
                 )
 
-        except Exception as exc:
-            print(
-                "Monitor alert email failed:",
-                type(exc).__name__,
-            )
+            except Exception as exc:
+                import traceback
+                print(   f"[goodAPI] Failed to send {alert_event} email for monitor {worker_id}: {type(exc).__name__}: {exc}",       flush=True,    )
+                traceback.print_exc()
 
 
 
