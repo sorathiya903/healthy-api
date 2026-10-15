@@ -362,10 +362,10 @@ async def check_worker(worker: dict[str, Any]) -> None:
                     result=result,
                 )
 
-            except Exception as exc:
-                import traceback
-                print(   f"[goodAPI] Failed to send {alert_event} email for monitor {worker_id}: {type(exc).__name__}: {exc}",       flush=True,    )
-                traceback.print_exc()
+        except Exception as exc:
+            import traceback
+            print(   f"[goodAPI] Failed to send {alert_event} email for monitor {worker_id}: {type(exc).__name__}: {exc}",       flush=True,    )
+            traceback.print_exc()
 
 
 
