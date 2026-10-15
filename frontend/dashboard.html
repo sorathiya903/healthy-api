@@ -374,7 +374,7 @@ tr:last-child td{border-bottom:0}
 
     
     
-function formatRelativeTime(timestamp) {
+function fmtDate(timestamp) {
     if (!timestamp) return "Unknown";
 
     // MongoDB/Python timestamps may arrive as ISO strings.
@@ -419,10 +419,45 @@ function formatRelativeTime(timestamp) {
 const $ = (s,r=document)=>r.querySelector(s);
 function safe(t){ return t==null? "" : String(t); }
 function escAttr(s){ return safe(s).replace(/"/g,'&quot;'); }
-function fmtDate(iso){
-  if(!iso) return "—";
-  try{ const d=new Date(iso); if(isNaN(d)) return safe(iso); const diff=Date.now()-d.getTime(); const m=Math.floor(diff/60000); if(m<1) return "just now"; if(m<60) return `${m}m ago`; const h=Math.floor(m/60); if(h<24) return `${h}h ago`; return d.toLocaleString(); }catch{ return safe(iso); }
+
+function formatRelativeTime(timestamp) {
+    if (!timestamp) return "Unknown";
+
+    // MongoDB/Python timestamps may arrive as ISO strings.
+    const createdAt = new Date(timestamp);
+    if (Number.isNaN(createdAt.getTime())) return "Unknown";
+
+    const seconds = Math.max(
+        0,
+        Math.floor((Date.now() - createdAt.getTime()) / 1000)
+    );
+
+    if (seconds < 60) return "Just now";
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+        return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+
+    const days = Math.floor(hours / 24);
+    if (days < 30) {
+        return `${days} day${days === 1 ? "" : "s"} ago`;
+    }
+
+    const months = Math.floor(days / 30);
+    if (months < 12) {
+        return `${months} month${months === 1 ? "" : "s"} ago`;
+    }
+
+    const years = Math.floor(days / 365);
+    return `${years} year${years === 1 ? "" : "s"} ago`;
 }
+
 function getToken(){ try{ return sessionStorage.getItem("goodapi_token"); }catch(e){ return null; } }
 function clearToken(){ try{ sessionStorage.removeItem("goodapi_token"); }catch(e){} }
 
