@@ -303,19 +303,27 @@ async def check_worker(worker: dict[str, Any]) -> None:
         return
 
     previous_state = latest.get("status_was")
+    new_state = "up" if healthy else "down"
+    alert_event = None
+    down_since = latest.get("down_since")
 
-    # Initialize older monitors that don't have state fields yet.
-    if previous_state not in ("up", "down"):
-        previous_state = "up" if healthy else "down"
-        workers.update_one(
-            {"_id": worker_id, "owner_id": owner_id},
-            {
-                "$set": {
-                    "status_was": previous_state,
-                    "down_since": None if healthy else now,
-                }
-            },
-        )
+    if previous_state == "up" and new_state == "down":
+        alert_event = "down"
+        down_since = now
+
+    elif previous_state == "down" and new_state == "up":
+        alert_event = "up"
+
+    update_fields = {"last_test": result}
+
+    if new_state != previous_state:
+        update_fields["status_was"] = new_state
+        update_fields["last_state_change_at"] = now
+        update_fields["down_since"] = now if new_state == "down" else None
+
+    workers.update_one(
+          {    "_id": worker_id,    "owner_id": owner_id,  "enabled": True,       },
+        {"$set": update_fields},)
 
     new_state = "up" if healthy else "down"
     alert_event = None
@@ -357,7 +365,10 @@ async def check_worker(worker: dict[str, Any]) -> None:
         **result,
     })
 
-    
+    print(
+    f"[goodAPI] Monitor {worker_id}: "
+    f"previous={previous_state}, new={new_state}, "
+    f"alert_event={alert_event}, down_since={down_since}")
     if alert_event:
         try:
             if alert_event == "up":
