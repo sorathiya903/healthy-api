@@ -420,7 +420,7 @@ const $ = (s,r=document)=>r.querySelector(s);
 function safe(t){ return t==null? "" : String(t); }
 function escAttr(s){ return safe(s).replace(/"/g,'&quot;'); }
 
-function formatIsoDate(dateStr) {
+function formatRelativeTime(dateStr) {
   // Extract the inner timestamp from ISODate('...') if passed as a string
   const cleanStr = dateStr.includes("ISODate") 
     ? dateStr.match(/ISODate\(['"](.+?)['"]\)/)[1] 
