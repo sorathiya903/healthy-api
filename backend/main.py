@@ -156,6 +156,95 @@ async def send_alert_email(
         )
 
     return True
+
+
+async def send_monitor_alert(
+    worker: dict[str, Any],
+    event: str,
+    event_time: datetime,
+    result: dict[str, Any],
+    duration_seconds: float | None = None,
+) -> None:
+    user = users.find_one({"_id": worker["owner_id"]})
+    if not user or not user.get("email"):
+        return
+
+    name = worker.get("name", "Your monitor")
+    url = worker.get("url", "")
+    expected = result.get("expected_status", worker.get("expected_status"))
+    actual = result.get("status_code")
+    body = result.get("body_preview") or result.get("error") or (
+        "No response body was available."
+    )
+    time_text = event_time.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    # Escape API response content so it cannot inject HTML into the email.
+    from html import escape
+
+    safe_name = escape(str(name))
+    safe_url = escape(str(url))
+    safe_expected = escape(str(expected))
+    safe_actual = escape(
+        str(actual) if actual is not None else "No HTTP response"
+    )
+    safe_body = escape(str(body)[:4000])
+    safe_time = escape(time_text)
+
+    if event == "down":
+        subject = f"[goodAPI] API down — {name}"
+        heading = "API is down"
+        details = f"""
+        <p>Your API monitor <strong>{safe_name}</strong> failed its check.</p>
+        <p><strong>URL:</strong> {safe_url}</p>
+        <p><strong>Expected HTTP status:</strong> {safe_expected}</p>
+        <p><strong>Actual HTTP status:</strong> {safe_actual}</p>
+        <p><strong>Detected at:</strong> {safe_time}</p>
+        <p><strong>Response returned by the API:</strong></p>
+        <pre style="white-space:pre-wrap;overflow-wrap:anywhere;
+                    background:#f3f4f6;padding:12px;border-radius:6px;">{safe_body}</pre>
+        """
+    else:
+        subject = f"[goodAPI] API recovered — {name}"
+        heading = "API has recovered"
+        duration_text = (
+            f"{round(duration_seconds)} seconds"
+            if duration_seconds is not None
+            else "unknown duration"
+        )
+        details = f"""
+        <p>Your API monitor <strong>{safe_name}</strong> has recovered.</p>
+        <p><strong>URL:</strong> {safe_url}</p>
+        <p><strong>Previous expected HTTP status:</strong> {safe_expected}</p>
+        <p><strong>Previous response status:</strong> {safe_actual}</p>
+        <p>The API is now responding with HTTP
+           <strong>{safe_actual}</strong>, matching the expected status.</p>
+        <p><strong>Recovered at:</strong> {safe_time}</p>
+        <p><strong>Estimated downtime:</strong> {escape(duration_text)}</p>
+        <p><strong>Current response from the API:</strong></p>
+        <pre style="white-space:pre-wrap;overflow-wrap:anywhere;
+                    background:#f3f4f6;padding:12px;border-radius:6px;">{safe_body}</pre>
+        """
+
+    html_content = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;
+                margin:auto;color:#202124;line-height:1.6;">
+      <h2 style="color:#2563eb;">goodAPI Alerts</h2>
+      <h3>{heading}</h3>
+      {details}
+      <hr style="border:0;border-top:1px solid #ddd;">
+      <p style="color:#777;font-size:12px;">
+        You received this notification because alerts are enabled
+        for this monitor.
+      </p>
+    </div>
+    """
+
+    await send_alert_email(
+        to_email=user["email"],
+        subject=subject,
+        html_content=html_content,
+    )
+
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -173,6 +262,7 @@ def public_user(user: dict[str, Any]) -> dict[str, Any]:
 # Automatic monitor scheduler
 # ---------------------------------------------------------------------------
 
+
 async def check_worker(worker: dict[str, Any]) -> None:
     worker_id = worker["_id"]
     owner_id = worker["owner_id"]
@@ -188,7 +278,6 @@ async def check_worker(worker: dict[str, Any]) -> None:
         result["ok"] = healthy
 
     except Exception:
-        # Do not expose internal exceptions in the dashboard.
         result = {
             "ok": False,
             "healthy": False,
@@ -198,27 +287,106 @@ async def check_worker(worker: dict[str, Any]) -> None:
             "error": "The monitor check could not be completed.",
             "checked_at": utc_now().isoformat(),
         }
+        healthy = False
 
-    # Save the result and update the latest monitor status.
+    now = utc_now()
+
+    # Read the latest state in case it changed since the scheduler
+    # loaded this monitor.
+    latest = workers.find_one({
+        "_id": worker_id,
+        "owner_id": owner_id,
+        "enabled": True,
+    })
+
+    if not latest:
+        return
+
+    previous_state = latest.get("status_was")
+
+    # Initialize older monitors that don't have state fields yet.
+    if previous_state not in ("up", "down"):
+        previous_state = "up" if healthy else "down"
+        workers.update_one(
+            {"_id": worker_id, "owner_id": owner_id},
+            {
+                "$set": {
+                    "status_was": previous_state,
+                    "down_since": None if healthy else now,
+                }
+            },
+        )
+
+    new_state = "up" if healthy else "down"
+    alert_event = None
+    down_since = latest.get("down_since")
+
+    # UP -> DOWN: record the outage and prepare one alert.
+    if previous_state == "up" and new_state == "down":
+        alert_event = "down"
+        down_since = now
+
+    # DOWN -> UP: calculate downtime and prepare recovery alert.
+    elif previous_state == "down" and new_state == "up":
+        alert_event = "up"
+
+    update_fields = {"last_test": result}
+
+    if new_state != previous_state:
+        update_fields["status_was"] = new_state
+        update_fields["last_state_change_at"] = now
+
+        if new_state == "down":
+            update_fields["down_since"] = now
+        else:
+            update_fields["down_since"] = None
+
     workers.update_one(
         {
             "_id": worker_id,
             "owner_id": owner_id,
             "enabled": True,
         },
-        {"$set": {"last_test": result}},
+        {"$set": update_fields},
     )
 
-    # Keep history only for a monitor that still exists.
-    if workers.find_one(
-        {"_id": worker_id, "owner_id": owner_id, "enabled": True},
-        {"_id": 1},
-    ):
-        probe_results.insert_one({
-            "worker_id": worker_id,
-            "owner_id": owner_id,
-            **result,
-        })
+    # Save this test to history.
+    probe_results.insert_one({
+        "worker_id": worker_id,
+        "owner_id": owner_id,
+        **result,
+    })
+
+    
+    if alert_event:
+        try:
+            if alert_event == "up":
+                duration = (
+                    (now - down_since).total_seconds()
+                    if isinstance(down_since, datetime)
+                    else None
+                )
+                await send_monitor_alert(
+                    worker=worker,
+                    event="up",
+                    event_time=now,
+                    result=result,
+                    duration_seconds=duration,
+                )
+            else:
+                await send_monitor_alert(
+                    worker=worker,
+                    event="down",
+                    event_time=now,
+                    result=result,
+                )
+
+        except Exception as exc:
+            print(
+                "Monitor alert email failed:",
+                type(exc).__name__,
+            )
+
 
 
 async def monitoring_loop() -> None:
@@ -632,15 +800,24 @@ async def create_worker(
     test_result["healthy"] = healthy
 
     test_result["ok"] = healthy
+    
+    initial_state = "up" if healthy else "down"
+    initial_down_since = None if healthy else utc_now()
+
     workers.update_one(
         {"_id": result.inserted_id, "owner_id": user["_id"]},
         {
             "$set": {
                 "last_test": test_result,
-                "next_check_at": utc_now() + timedelta(seconds=payload.interval_seconds),
+                "next_check_at": utc_now() + timedelta(
+                    seconds=payload.interval_seconds
+                ),
+                "status_was": initial_state,
+                "down_since": initial_down_since,
             }
         },
     )
+
     probe_results.insert_one(
         {
             "worker_id": result.inserted_id,
