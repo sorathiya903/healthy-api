@@ -375,29 +375,35 @@ tr:last-child td{border-bottom:0}
     
     
 function fmtDate(dateStr) {
-  // Safe extraction of the ISO string from ISODate('...')
+  if (!dateStr) return "";
+
+  // 1. Clean the string if it contains 'ISODate(...)'
   const match = dateStr.match(/ISODate\(['"](.+?)['"]\)/);
-  const cleanStr = match ? match[1] : dateStr;
+  let cleanStr = match ? match[1] : dateStr;
+
+  // 2. Fix the missing offset: if there's no 'Z' or '+' signs, append 'Z' to force UTC interpretation
+  if (!cleanStr.endsWith('Z') && !cleanStr.includes('+') && !/-\d{2}:\d{2}\$/.test(cleanStr)) {
+    cleanStr += 'Z';
+  }
   
-  // Creating the date object preserves the UTC (+00:00) anchor
   const date = new Date(cleanStr);
 
-  // Omit the 'timeZone' option so JavaScript defaults to the user's local browser device
+  // 3. Extract components using the user's native local device timezone
   const day = date.toLocaleString('en-US', { day: 'numeric' });
   const month = date.toLocaleString('en-US', { month: 'short' });
   const year = date.toLocaleString('en-US', { year: '2-digit' });
 
-  // Dynamically extract local hours and minutes based on user's device clock
   let hours = date.getHours();
   const minutes = date.getMinutes().toString().padStart(2, '0');
   const ampm = hours >= 12 ? 'pm' : 'am';
 
-  // Convert to 12-hour display format
+  // Convert to 12-hour format
   hours = hours % 12;
   hours = hours ? hours : 12; 
 
   return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
 }
+
 
   const $$ = (selector, root = document) =>
   Array.from(root.querySelectorAll(selector));
