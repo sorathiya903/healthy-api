@@ -442,6 +442,15 @@ def serialize_worker(worker: dict[str, Any]) -> dict[str, Any]:
         "enabled": worker["enabled"],
         "created_at": worker["created_at"].isoformat(),
         "last_test": worker.get("last_test"),
+        "status_was": worker.get("status_was", "unknown"),
+        "down_since": (
+            worker["down_since"].isoformat()
+            if isinstance(worker.get("down_since"), datetime)
+            else None),
+        "last_state_change_at": (
+            worker["last_state_change_at"].isoformat().      
+            if isinstance(worker.get("last_state_change_at"), datetime)
+            else None),
     }
 
 
