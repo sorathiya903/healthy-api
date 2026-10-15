@@ -47,7 +47,7 @@ if len(SESSION_SECRET) < 32:
     )
 
 app = FastAPI(
-    title="Healthy API",
+    title="goodAPI",
     description="API testing and monitoring backend"
 )
 
@@ -341,12 +341,13 @@ async def check_worker(worker: dict[str, Any]) -> None:
     f"alert_event={alert_event}, down_since={down_since}")
     if alert_event:
         try:
-            if alert_event == "up":
-                duration = (
-                    (now - down_since).total_seconds()
-                    if isinstance(down_since, datetime)
-                    else None
-                )
+            if alert_event == “up”:
+                duration = None
+                if isinstance(down_since, datetime):
+                    # MongoDB may return a naive datetime; treat it as UTC.
+                    if down_since.tzinfo is None:
+                        down_since = down_since.replace(tzinfo=timezone.utc)
+                        duration = max(0, (now - down_since).total_seconds())
                 await send_monitor_alert(
                     worker=worker,
                     event="up",
