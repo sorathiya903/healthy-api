@@ -341,7 +341,7 @@ async def check_worker(worker: dict[str, Any]) -> None:
     f"alert_event={alert_event}, down_since={down_since}")
     if alert_event:
         try:
-            if alert_event == “up”:
+            if alert_event == "up":
                 duration = None
                 if isinstance(down_since, datetime):
                     # MongoDB may return a naive datetime; treat it as UTC.
