@@ -375,28 +375,27 @@ tr:last-child td{border-bottom:0}
     
     
 function fmtDate(dateStr) {
-  // Extract the inner timestamp from ISODate('...') if passed as a string
-  const cleanStr = dateStr.includes("ISODate") 
-    ? dateStr.match(/ISODate\(['"](.+?)['"]\)/)[1] 
-    : dateStr;
-
+  // Safe extraction of the ISO string from ISODate('...')
+  const match = dateStr.match(/ISODate\(['"](.+?)['"]\)/);
+  const cleanStr = match ? match[1] : dateStr;
+  
+  // Creating the date object preserves the UTC (+00:00) anchor
   const date = new Date(cleanStr);
 
-  // Extract date components
-  const day = date.getDate();
+  // Omit the 'timeZone' option so JavaScript defaults to the user's local browser device
+  const day = date.toLocaleString('en-US', { day: 'numeric' });
   const month = date.toLocaleString('en-US', { month: 'short' });
   const year = date.toLocaleString('en-US', { year: '2-digit' });
 
-  // Extract time components
+  // Dynamically extract local hours and minutes based on user's device clock
   let hours = date.getHours();
   const minutes = date.getMinutes().toString().padStart(2, '0');
   const ampm = hours >= 12 ? 'pm' : 'am';
 
-  // Convert to 12-hour format
+  // Convert to 12-hour display format
   hours = hours % 12;
   hours = hours ? hours : 12; 
 
-  // Format: "15 Oct 26, 5:52 pm"
   return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
 }
 
