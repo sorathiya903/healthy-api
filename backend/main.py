@@ -163,7 +163,7 @@ async def explain_live_result(result: dict[str, Any]) -> str:
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     model = os.getenv(
         "GROQ_MODEL",
-        "llama-3.3-70b-versatile"
+        "llama-3.1-8b-instant"
     ).strip()
 
     if not api_key:
@@ -221,7 +221,7 @@ async def explain_live_result(result: dict[str, Any]) -> str:
                         },
                     ],
                     "temperature": 0.3,
-                    "max_tokens": 700,
+                    "max_tokens": 2500,
                 },
             )
 
@@ -346,10 +346,7 @@ async def send_monitor_alert(
       <h3>{heading}</h3>
       {details}
       <hr style="border:0;border-top:1px solid #ddd;">
-      <p style="color:#777;font-size:12px;">
-        You received this notification because alerts are enabled
-        for this monitor.
-      </p>
+      
     </div>
     """
 
