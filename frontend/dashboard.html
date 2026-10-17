@@ -688,7 +688,12 @@ function renderTables(){
 
     // Mobile cards
     const card=document.createElement("div"); card.className="mcard";
-    card.innerHTML=`<div class="mcard-top"><div style="font-weight:600"></div><span class="badge ${badgeClass}"></span></div><div class="url" style="max-width:100%"></div><div style="display:flex; gap:8px; flex-wrap:wrap"><span class="mono" style="font-size:11px; color:var(--muted)"></span><span class="mono" style="font-size:11px; color:var(--muted)"></span></div><div style="display:flex; gap:6px"><button class="btn btn-sm" style="flex:1">View</button><button class="btn btn-sm" style="flex:1; color:var(--bad)">Delete</button></div>`;
+    card.innerHTML=`<div class="mcard-top"><div style="font-weight:600"></div><span class="badge ${badgeClass}"></span></div><div class="url" style="max-width:100%"></div><div style="display:flex; gap:8px; flex-wrap:wrap"><span class="mono" style="font-size:11px; color:var(--muted)"></span><span class="mono" style="font-size:11px; color:var(--muted)"></span></div><div style="display:flex; gap:6px"><button class="btn btn-sm" style="flex:1">View</button><button class="btn btn-sm" style="flex:1; color:var(--bad)">Delete</button>
+    <button onclick="explainMonitor('MONITOR_ID_HERE')">
+    AI Explain
+</button>
+    
+    </div>`;
     card.children[0].children[0].textContent=name;
     card.children[0].children[1].textContent=badgeText; card.children[0].children[1].className=`badge ${badgeClass}`;
     card.children[1].textContent=url;
