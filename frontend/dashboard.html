@@ -367,52 +367,39 @@ tr:last-child td{border-bottom:0}
   </div>
 </div>
 
+<!-- AI EXPLAIN MODAL -->
+<div class="backdrop" id="ai-backdrop" aria-hidden="true">
+  <div class="modal" style="max-width:640px"
+       role="dialog" aria-modal="true" aria-labelledby="ai-title">
+    <div class="modal-head">
+      <div class="modal-title" id="ai-title">✦ AI Explain</div>
+      <button id="ai-close" class="icon-btn"
+              type="button" style="width:28px;height:28px"
+              aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="ai-loading" style="display:none;align-items:center;gap:10px">
+        <span class="loader"></span>
+        <span>Testing the API and generating an explanation...</span>
+      </div>
+      <div id="ai-error" style="display:none;color:var(--bad);margin-bottom:12px"></div>
+      <div id="ai-result" style="display:none">
+        <div class="field-label">Fresh live test</div>
+        <div id="aiLiveStatus" style="margin:8px 0 14px;font-weight:700"></div>
+        <div class="field-label" style="margin-bottom:8px">Response preview</div>
+        <pre id="aiPreview" class="code-block"></pre>
+        <div class="field-label" style="margin:16px 0 8px">AI explanation</div>
+        <div id="aiExplanation" style="white-space:pre-wrap;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
 <script>
   
-async function explainMonitor(workerId) {
-    const token = sessionStorage.getItem("goodapi_token");
 
-    if (!token) {
-        alert("Please log in to use AI Explain.");
-        return;
-    }
-
-    try {
-        const response = await fetch(
-            `https://healthy-api-z0mi.onrender.com/workers/${encodeURIComponent(workerId)}/ai-explain`,
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.detail || "Could not explain this API result."
-            );
-        }
-
-        // Replace this with your existing modal or result panel.
-        document.getElementById("aiExplanation").textContent =
-            data.ai_explanation;
-
-        document.getElementById("aiLiveStatus").textContent =
-            data.live_result.status_code == null
-                ? "No HTTP status received"
-                : `HTTP ${data.live_result.status_code}`;
-
-    } catch (error) {
-        alert(error.message || "Something went wrong.");
-    }
-}
-    
     
 function fmtDate(dateStr) {
   if (!dateStr) return "";
@@ -689,11 +676,14 @@ function renderTables(){
     // Mobile cards
     const card=document.createElement("div"); card.className="mcard";
     card.innerHTML=`<div class="mcard-top"><div style="font-weight:600"></div><span class="badge ${badgeClass}"></span></div><div class="url" style="max-width:100%"></div><div style="display:flex; gap:8px; flex-wrap:wrap"><span class="mono" style="font-size:11px; color:var(--muted)"></span><span class="mono" style="font-size:11px; color:var(--muted)"></span></div><div style="display:flex; gap:6px"><button class="btn btn-sm" style="flex:1">View</button><button class="btn btn-sm" style="flex:1; color:var(--bad)">Delete</button>
-    <button onclick="explainMonitor(${id})">
-    AI Explain
-</button>
     
+    <button class="btn btn-sm" data-ai-explain type="button">
+    ✦ AI Explain
+</button>
     </div>`;
+    card.querySelector("[data-ai-explain]").addEventListener("click", () => {
+    explainMonitor(id, name);
+});
     card.children[0].children[0].textContent=name;
     card.children[0].children[1].textContent=badgeText; card.children[0].children[1].className=`badge ${badgeClass}`;
     card.children[1].textContent=url;
@@ -701,21 +691,18 @@ function renderTables(){
     card.children[2].children[1].textContent=`${health.code} • ${health.latency}ms`;
     card.children[3].children[0].addEventListener("click",()=>openDetail(id));
     card.children[3].children[1].addEventListener("click",()=>confirmDelete(id,name));
-   
-    
-    
 function bindCardButtons(cardElement, workerId, workerName) {
-  const buttons = cardElement.querySelectorAll("button");
+    const buttons = cardElement.querySelectorAll("button");
 
-  if (buttons[0]) {
-    buttons[0].addEventListener("click", () => openDetail(workerId));
-  }
+    buttons[0]?.addEventListener("click", () => openDetail(workerId));
 
-  if (buttons[1]) {
-    buttons[1].addEventListener("click", () =>
-      confirmDelete(workerId, workerName)
-    );
-  }
+    buttons[1]?.addEventListener("click", () => {
+        confirmDelete(workerId, workerName);
+    });
+
+    buttons[2]?.addEventListener("click", () => {
+        explainMonitor(workerId, workerName);
+    });
 }
 
 const overviewCard = card.cloneNode(true);
@@ -735,6 +722,75 @@ document.querySelectorAll('#overview-cards.mcard').forEach((c,i)=>{  const w=mon
     c.querySelectorAll("button")[1].addEventListener("click",()=>confirmDelete(id, w.name));
   });
 }
+
+  
+async function explainMonitor(workerId, workerName = "Monitor") {
+    const backdrop = document.getElementById("ai-backdrop");
+    const loading = document.getElementById("ai-loading");
+    const errorBox = document.getElementById("ai-error");
+    const resultBox = document.getElementById("ai-result");
+    const statusBox = document.getElementById("aiLiveStatus");
+    const previewBox = document.getElementById("aiPreview");
+    const explanationBox = document.getElementById("aiExplanation");
+
+    backdrop.classList.add("open");
+    backdrop.setAttribute("aria-hidden", "false");
+
+    loading.style.display = "flex";
+    errorBox.style.display = "none";
+    resultBox.style.display = "none";
+    document.getElementById("ai-title").textContent =
+        `AI Explain — ${workerName}`;
+
+    try {
+        // Calls your authenticated FastAPI endpoint.
+        const data = await api(
+            `/workers/${encodeURIComponent(workerId)}/ai-explain`,
+            { method: "POST" }
+        );
+
+        const live = data.live_result || {};
+        const status = live.status_code ?? "No HTTP status";
+        const latency = live.latency_ms ?? "—";
+
+        statusBox.textContent =
+            `HTTP ${status} · ${latency} ms` +
+            (live.error ? ` · ${live.error}` : "");
+
+        previewBox.textContent =
+            typeof live.body_preview === "string"
+                ? live.body_preview.slice(0, 4000)
+                : JSON.stringify(live.body_preview ?? {}, null, 2).slice(0, 4000);
+
+        explanationBox.textContent =
+            data.ai_explanation ||
+            data.explanation ||
+            "The AI endpoint returned no explanation.";
+
+        resultBox.style.display = "block";
+    } catch (err) {
+        errorBox.textContent = err.message || "Could not explain this API result.";
+        errorBox.style.display = "block";
+    } finally {
+        loading.style.display = "none";
+    }
+}
+
+function closeAIExplain() {
+    const backdrop = document.getElementById("ai-backdrop");
+    backdrop.classList.remove("open");
+    backdrop.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById("ai-close").addEventListener(
+    "click", closeAIExplain
+);
+
+document.getElementById("ai-backdrop").addEventListener("click", event => {
+    if (event.target === event.currentTarget) {
+        closeAIExplain();
+    }
+});
 
 async function loadMonitors(){
   $("#overview-loading").style.display="grid";
