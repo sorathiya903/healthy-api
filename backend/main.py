@@ -163,7 +163,7 @@ async def explain_live_result(result: dict[str, Any]) -> str:
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     model = os.getenv(
         "GROQ_MODEL",
-        "llama-3.1-8b-instant"
+        "openai/gpt-oss-20b"
     ).strip()
 
     if not api_key:
