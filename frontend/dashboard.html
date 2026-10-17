@@ -371,7 +371,47 @@ tr:last-child td{border-bottom:0}
 
 <script>
   
+async function explainMonitor(workerId) {
+    const token = sessionStorage.getItem("goodapi_token");
 
+    if (!token) {
+        alert("Please log in to use AI Explain.");
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `https://healthy-api-z0mi.onrender.com/workers/${encodeURIComponent(workerId)}/ai-explain`,
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Could not explain this API result."
+            );
+        }
+
+        // Replace this with your existing modal or result panel.
+        document.getElementById("aiExplanation").textContent =
+            data.ai_explanation;
+
+        document.getElementById("aiLiveStatus").textContent =
+            data.live_result.status_code == null
+                ? "No HTTP status received"
+                : `HTTP ${data.live_result.status_code}`;
+
+    } catch (error) {
+        alert(error.message || "Something went wrong.");
+    }
+}
     
     
 function fmtDate(dateStr) {
