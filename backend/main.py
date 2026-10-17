@@ -226,15 +226,24 @@ async def explain_live_result(result: dict[str, Any]) -> str:
             )
 
         if not response.is_success:
-            # Keep provider details and credentials out of client errors.
+    # Log a limited error response for debugging.
+    # Never log the API key or authorization headers.
+            try:
+                provider_error = response.json().get("error", {})
+                if isinstance(provider_error, dict):
+                    provider_message = provider_error.get(     "message", "No provider message"     )
+                    provider_code = provider_error.get("code", "unknown")
+                else:
+                    provider_message = str(provider_error)
+                    provider_code = "unknown"
+            except (ValueError, AttributeError):
+                provider_message = "Could not parse provider error"
+                provider_code = "unknown"
+
             print(
-                "[goodAPI] Groq API returned HTTP",
-                response.status_code,
-            )
-            raise HTTPException(
-                status_code=502,
-                detail="The AI provider could not generate an explanation."
-            )
+                f"[goodAPI] Groq HTTP {response.status_code}; "
+                f"code={provider_code}; message={str(provider_message)[:500]}" )
+            raise HTTPException(    status_code=502,  detail="The AI provider could not generate an explanation.")
 
         data = response.json()
         choices = data.get("choices", [])
