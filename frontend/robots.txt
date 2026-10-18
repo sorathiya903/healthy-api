@@ -1,0 +1,7 @@
+
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /config.js
+
+Sitemap: https://goodapi.netlify.app/sitemap.xml
