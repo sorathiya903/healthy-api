@@ -17,3 +17,13 @@ if (isDebug) {
     // 4. Inject the script into the document head or body
     document.head.appendChild(script);
 }
+// 1. Create a new link element
+const link = document.createElement('link');
+
+// 2. Set the required attributes
+link.rel = 'icon';
+link.type = 'image/png';
+link.href = 'favicon.png';
+
+// 3. Append it to the head section
+document.head.appendChild(link);
